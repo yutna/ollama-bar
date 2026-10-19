@@ -109,6 +109,16 @@ public enum L10n {
         String(localized: "alert.noModels.body", defaultValue: "Run `ollama pull <model>` first.")
     }
 
+    public static var alertUnreachableTitle: String {
+        String(localized: "alert.unreachable.title", defaultValue: "Ollama is not answering")
+    }
+
+    public static var alertUnreachableBody: String {
+        String(
+            localized: "alert.unreachable.body",
+            defaultValue: "The server did not respond to the request. Start it and try again.")
+    }
+
     public static var alertWarmFailedTitle: String {
         String(localized: "alert.warmFailed.title", defaultValue: "Could not warm up the model")
     }

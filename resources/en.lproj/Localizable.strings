@@ -64,6 +64,12 @@
 /* Alert body when warm-up is requested but no model is installed */
 "alert.noModels.body" = "Run `ollama pull <model>` first.";
 
+/* Alert title when warm-up is requested but the server does not answer */
+"alert.unreachable.title" = "Ollama is not answering";
+
+/* Alert body when warm-up is requested but the server does not answer */
+"alert.unreachable.body" = "The server did not respond to the request. Start it and try again.";
+
 /* Alert title when warm-up fails */
 "alert.warmFailed.title" = "Could not warm up the model";
 
