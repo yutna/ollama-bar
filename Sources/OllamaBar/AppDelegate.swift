@@ -51,6 +51,12 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         service.stop()
     }
 
+    /// Cleanup path for SIGTERM/SIGINT/SIGHUP (see `main.swift`).
+    func handleTerminationSignal() {
+        service.stop()
+        exit(0)
+    }
+
     func menuWillOpen(_ menu: NSMenu) {
         rebuild(menu)
     }

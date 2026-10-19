@@ -48,4 +48,10 @@ if [ "$status" != "stopped" ]; then
 fi
 stop_fake
 
+echo "== --stop with nothing running =="
+if ! OLLAMABAR_PORT="$PORT" "$BIN" --stop >/dev/null; then
+    echo "FAIL: --stop exited non-zero with nothing running"
+    exit 1
+fi
+
 echo "smoke: OK"
