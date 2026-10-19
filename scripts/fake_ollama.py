@@ -59,7 +59,8 @@ class Handler(BaseHTTPRequestHandler):
             self.send_error(404)
 
     def log_message(self, *args):
-        pass
+        sys.stderr.write("fake_ollama[%s]: %s\n" % (MODE, (args[0] % args[1:] if len(args) > 1 else args[0])))
+        sys.stderr.flush()
 
 
 if __name__ == "__main__":

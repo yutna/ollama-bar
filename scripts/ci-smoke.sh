@@ -13,7 +13,17 @@ FAKE_PID=""
 start_fake() {
     python3 scripts/fake_ollama.py "$PORT" "$1" &
     FAKE_PID=$!
-    sleep 1
+    # Wait until the server really answers instead of guessing with sleeps.
+    n=0
+    while [ "$n" -lt 20 ]; do
+        if curl -s --max-time 1 "http://127.0.0.1:$PORT/api/version" >/dev/null 2>&1; then
+            return 0
+        fi
+        n=$((n + 1))
+        sleep 0.5
+    done
+    echo "FAIL: fake server (mode $1) did not start on port $PORT"
+    exit 1
 }
 
 stop_fake() {
@@ -40,10 +50,13 @@ stop_fake
 
 echo "== --warm preloads the fake model =="
 start_fake healthy
+set +e
 warmed=$(OLLAMABAR_PORT="$PORT" "$BIN" --warm)
-echo "warm: $warmed"
-if [ "$warmed" != "loaded" ]; then
-    echo "FAIL: expected 'loaded', got '$warmed'"
+warm_rc=$?
+set -e
+echo "warm: $warmed (exit $warm_rc)"
+if [ "$warm_rc" -ne 0 ] || [ "$warmed" != "loaded" ]; then
+    echo "FAIL: expected 'loaded' with exit 0, got '$warmed' (exit $warm_rc)"
     exit 1
 fi
 stop_fake
