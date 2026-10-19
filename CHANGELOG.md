@@ -6,6 +6,29 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.2.0] — 2026-10-19
+
+### Added
+
+- `OLLAMABAR_LOG_MAX_BYTES` sets the cap for `~/.ollama/logs/server.log`
+  (10 MB by default)
+
+### Changed
+
+- `server.log` is rotated while the server runs instead of only at the next
+  start, so a long session can no longer grow the log without bound; the file
+  it replaces is kept as `server.log.1`
+- Quitting no longer blocks the menu bar: the server is stopped off the main
+  thread, and termination skips the per-model `ollama stop` round-trips —
+  the server is killed anyway and SIGTERM reclaims the memory
+- Warm-up (and `--warm`) preloads a model only when none is loaded, so it can
+  no longer evict the model in use under the default
+  `OLLAMA_MAX_LOADED_MODELS=1`
+- Warm-up skips embedding-only models using the `capabilities` the server
+  reports, falling back to the name/family heuristic on older servers
+- `make lint` also fails when a `defaultValue:` in `L10n.swift` drifts from
+  `resources/en.lproj`; each pull request runs the checks once instead of twice
+
 ## [1.1.1] — 2026-10-19
 
 ### Fixed
@@ -95,7 +118,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Homebrew (Apple Silicon / Intel) and official-app binary auto-detection
 - GitHub Actions CI (build + `swift-format` lint) and tag-driven release workflow
 
-[Unreleased]: https://github.com/yutna/ollama-bar/compare/v1.1.1...HEAD
+[Unreleased]: https://github.com/yutna/ollama-bar/compare/v1.2.0...HEAD
+[1.2.0]: https://github.com/yutna/ollama-bar/releases/tag/v1.2.0
 [1.1.1]: https://github.com/yutna/ollama-bar/releases/tag/v1.1.1
 [1.1.0]: https://github.com/yutna/ollama-bar/releases/tag/v1.1.0
 [1.0.1]: https://github.com/yutna/ollama-bar/releases/tag/v1.0.1
