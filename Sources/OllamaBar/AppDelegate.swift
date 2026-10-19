@@ -60,13 +60,26 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         }
     }
 
+    /// Quitting must not freeze the menu: stop off the main thread and let
+    /// AppKit wait with `.terminateLater`. `applicationWillTerminate` keeps a
+    /// fast safety-net call for paths that reach it without this one.
+    func applicationShouldTerminate(_ sender: NSApplication) -> NSApplication.TerminateReply {
+        Task.detached { [weak self] in
+            _ = self?.service.stop(unloadingModels: false)
+            await MainActor.run {
+                NSApp.reply(toApplicationShouldTerminate: true)
+            }
+        }
+        return .terminateLater
+    }
+
     func applicationWillTerminate(_ notification: Notification) {
-        service.stop()
+        service.stop(unloadingModels: false)
     }
 
     /// Cleanup path for SIGTERM/SIGINT/SIGHUP (see `main.swift`).
     func handleTerminationSignal() {
-        service.stop()
+        service.stop(unloadingModels: false)
         exit(0)
     }
 
