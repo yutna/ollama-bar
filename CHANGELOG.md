@@ -6,6 +6,25 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.1.1] — 2026-10-19
+
+### Fixed
+
+- `--version` / `-v` prints the app version, and an unknown `--option` prints
+  the usage and exits 2 instead of silently launching the menu bar app (which
+  made scripts and CI hang); the smoke test covers both
+- `start()` and `stop()` are serialized, so overlapping calls from menu
+  actions, the termination signal handler and the CLI can no longer spawn two
+  servers or kill a server that is still starting up
+- `OLLAMABAR_KEEP_ALIVE=0` is honoured (unload immediately) instead of falling
+  back to `-1` (keep models loaded forever)
+- The `ollama` binary is also found in MacPorts, `~/.local/bin`, `~/bin` and
+  asdf/mise shims, with a login-shell fallback for `PATH` entries added in
+  shell profiles, so the GUI app no longer reports "Ollama not found" for
+  those installs
+- The menu bar app shows an alert when **Stop** fails instead of quietly
+  keeping the running state
+
 ## [1.1.0] — 2026-10-19
 
 ### Added
@@ -76,7 +95,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Homebrew (Apple Silicon / Intel) and official-app binary auto-detection
 - GitHub Actions CI (build + `swift-format` lint) and tag-driven release workflow
 
-[Unreleased]: https://github.com/yutna/ollama-bar/compare/v1.1.0...HEAD
+[Unreleased]: https://github.com/yutna/ollama-bar/compare/v1.1.1...HEAD
+[1.1.1]: https://github.com/yutna/ollama-bar/releases/tag/v1.1.1
 [1.1.0]: https://github.com/yutna/ollama-bar/releases/tag/v1.1.0
 [1.0.1]: https://github.com/yutna/ollama-bar/releases/tag/v1.0.1
 [1.0.0]: https://github.com/yutna/ollama-bar/releases/tag/v1.0.0
