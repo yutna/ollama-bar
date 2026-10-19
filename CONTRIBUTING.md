@@ -27,6 +27,12 @@ make lint       # swift-format + localization checks (CI runs this)
 make format     # apply Swift formatting in place
 ```
 
+`make build` leaves `build/OllamaBar.app` in the repository, so it also shows up
+in Spotlight/Launchpad next to an installed copy. Delete the bundle when you are
+done with it (`rm -rf build/OllamaBar.app`) or add the folder to
+*System Settings → Siri & Spotlight → Spotlight Privacy* if you keep dev builds
+around.
+
 Test the CLI paths after changes:
 
 ```sh
