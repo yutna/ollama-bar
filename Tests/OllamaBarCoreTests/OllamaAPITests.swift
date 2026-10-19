@@ -156,6 +156,29 @@ final class OllamaAPITests: XCTestCase {
             ])
     }
 
+    func testInstalledModelsParsesCapabilities() async throws {
+        respond(
+            200,
+            json([
+                "models": [
+                    ["name": "bge-m3:latest", "capabilities": ["embedding"]],
+                    [
+                        "name": "qwen3.8:27b-mlx", "details": ["family": ""],
+                        "capabilities": ["completion", "vision", "tools"],
+                    ],
+                ]
+            ]))
+        let models = try await api.installedModels()
+        XCTAssertEqual(
+            models,
+            [
+                OllamaAPI.InstalledModel(
+                    name: "bge-m3:latest", family: nil, capabilities: ["embedding"]),
+                OllamaAPI.InstalledModel(
+                    name: "qwen3.8:27b-mlx", family: "", capabilities: ["completion", "vision", "tools"]),
+            ])
+    }
+
     // MARK: - Warm-up
 
     func testWarmUpPostsModelAndNumericKeepAlive() async throws {
