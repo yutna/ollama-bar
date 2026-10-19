@@ -1,0 +1,8 @@
+blank_issues_enabled: true
+contact_links:
+  - name: Ollama documentation
+    url: https://docs.ollama.com
+    about: Questions about Ollama itself (models, pulls, API, context length)
+  - name: OllamaBar discussions
+    url: https://github.com/yutna/ollama-bar/discussions
+    about: Open-ended questions and ideas

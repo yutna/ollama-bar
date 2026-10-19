@@ -1,0 +1,53 @@
+/* Menu header when the server is stopped */
+"menu.status.stopped" = "○ Ollama หยุดอยู่";
+
+/* Menu header when the server is running without a loaded model */
+"menu.status.running" = "● Ollama ทำงานอยู่ — ยังไม่โหลดโมเดล";
+
+/* Menu header when the server is running with one or more loaded models. %@ is the model list */
+"menu.status.runningModels" = "● Ollama ทำงานอยู่ — %@";
+
+/* Menu item that starts the server */
+"menu.start" = "▶︎ เริ่ม Ollama (ค่าเริ่มต้นที่ปรับแต่งแล้ว)";
+
+/* Menu item that stops the server and frees RAM */
+"menu.stop" = "■ หยุด Ollama (คืน RAM ทันที)";
+
+/* Menu item that preloads the first installed model */
+"menu.warm" = "🔥 โหลดโมเดลล่วงหน้า";
+
+/* Menu item that toggles the login item */
+"menu.login" = "แสดงไอคอนตอนล็อกอิน";
+
+/* Menu item that quits the app */
+"menu.quit" = "ออก (ปิด Ollama ด้วย)";
+
+/* Tooltip when the server is stopped */
+"tooltip.stopped" = "Ollama หยุดอยู่ — คลิกเพื่อเริ่ม";
+
+/* Tooltip when the server is running without a loaded model */
+"tooltip.running" = "Ollama ทำงานอยู่ — ยังไม่โหลดโมเดล";
+
+/* Tooltip when the server is running with a loaded model */
+"tooltip.runningLoaded" = "Ollama ทำงานอยู่ — โหลดโมเดลแล้ว";
+
+/* Alert title when the login item cannot be changed */
+"alert.login.title" = "เปลี่ยนรายการล็อกอินไม่สำเร็จ";
+
+/* Alert body when the login item cannot be changed. %@ is the error detail */
+"alert.login.body" = "เพิ่มด้วยตนเองได้ที่ System Settings → General → Login Items\n\n%@";
+
+/* Alert title when the ollama binary cannot be found */
+"alert.notFound.title" = "ไม่พบ Ollama";
+
+/* Alert body when the ollama binary cannot be found */
+"alert.notFound.body" = "ติดตั้ง Ollama จาก https://ollama.com หรือรัน: brew install ollama";
+
+/* Alert title when the server fails to start */
+"alert.startFailed.title" = "เริ่ม Ollama ไม่สำเร็จ";
+
+/* Alert title when warm-up is requested but no model is installed */
+"alert.noModels.title" = "ยังไม่มีโมเดลติดตั้งอยู่";
+
+/* Alert body when warm-up is requested but no model is installed */
+"alert.noModels.body" = "รัน `ollama pull <model>` ก่อน";

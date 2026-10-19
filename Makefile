@@ -2,14 +2,22 @@ APP_NAME   := OllamaBar
 BUILD_DIR  := build
 APP        := $(BUILD_DIR)/$(APP_NAME).app
 PREFIX     ?= /Applications
-SWIFTC     ?= swiftc
+CONFIG     ?= release
+ARCH_FLAGS ?=
+SWIFT      ?= swift
+FORMAT     ?= xcrun swift-format
 
-.PHONY: build install uninstall run clean
+.PHONY: all build install uninstall run lint format release-zip clean
+
+all: build
 
 build:
-	mkdir -p "$(APP)/Contents/MacOS"
+	$(SWIFT) build -c $(CONFIG) $(ARCH_FLAGS)
+	rm -rf "$(APP)"
+	mkdir -p "$(APP)/Contents/MacOS" "$(APP)/Contents/Resources"
 	cp resources/Info.plist "$(APP)/Contents/Info.plist"
-	$(SWIFTC) -O -swift-version 5 Sources/main.swift -o "$(APP)/Contents/MacOS/$(APP_NAME)"
+	cp -R resources/en.lproj resources/th.lproj "$(APP)/Contents/Resources/"
+	cp "$$($(SWIFT) build -c $(CONFIG) $(ARCH_FLAGS) --show-bin-path)/$(APP_NAME)" "$(APP)/Contents/MacOS/$(APP_NAME)"
 	codesign --force --sign - "$(APP)" 2>/dev/null || true
 	@echo "Built $(APP)"
 
@@ -19,12 +27,24 @@ install: build
 	codesign --force --sign - "$(PREFIX)/$(APP_NAME).app" 2>/dev/null || true
 	@echo "Installed to $(PREFIX)/$(APP_NAME).app"
 
-run: build
-	open "$(APP)"
-
 uninstall:
 	rm -rf "$(PREFIX)/$(APP_NAME).app"
 	@echo "Removed $(PREFIX)/$(APP_NAME).app"
 
+run: build
+	open "$(APP)"
+
+lint:
+	$(FORMAT) lint --configuration .swift-format --recursive Sources
+
+format:
+	$(FORMAT) format --in-place --configuration .swift-format --recursive Sources
+
+release-zip:
+	$(MAKE) build ARCH_FLAGS="--arch arm64 --arch x86_64"
+	cd "$(BUILD_DIR)" && xattr -cr "$(APP_NAME).app" || true
+	cd "$(BUILD_DIR)" && ditto -c -k --norsrc --keepParent "$(APP_NAME).app" "$(APP_NAME).app.zip"
+	cd "$(BUILD_DIR)" && shasum -a 256 "$(APP_NAME).app.zip" | tee "$(APP_NAME).app.zip.sha256"
+
 clean:
-	rm -rf "$(BUILD_DIR)"
+	rm -rf "$(BUILD_DIR)" .build

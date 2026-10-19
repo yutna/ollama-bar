@@ -1,0 +1,53 @@
+/* Menu header when the server is stopped */
+"menu.status.stopped" = "○ Ollama stopped";
+
+/* Menu header when the server is running without a loaded model */
+"menu.status.running" = "● Ollama running — no model loaded";
+
+/* Menu header when the server is running with one or more loaded models. %@ is the model list */
+"menu.status.runningModels" = "● Ollama running — %@";
+
+/* Menu item that starts the server */
+"menu.start" = "▶︎ Start Ollama (optimized defaults)";
+
+/* Menu item that stops the server and frees RAM */
+"menu.stop" = "■ Stop Ollama (free RAM now)";
+
+/* Menu item that preloads the first installed model */
+"menu.warm" = "🔥 Warm up model (preload)";
+
+/* Menu item that toggles the login item */
+"menu.login" = "Show icon at login";
+
+/* Menu item that quits the app */
+"menu.quit" = "Quit (also stops Ollama)";
+
+/* Tooltip when the server is stopped */
+"tooltip.stopped" = "Ollama stopped — click to start";
+
+/* Tooltip when the server is running without a loaded model */
+"tooltip.running" = "Ollama running — no model loaded";
+
+/* Tooltip when the server is running with a loaded model */
+"tooltip.runningLoaded" = "Ollama running — model loaded";
+
+/* Alert title when the login item cannot be changed */
+"alert.login.title" = "Could not change login item";
+
+/* Alert body when the login item cannot be changed. %@ is the error detail */
+"alert.login.body" = "Add it manually under System Settings → General → Login Items.\n\n%@";
+
+/* Alert title when the ollama binary cannot be found */
+"alert.notFound.title" = "Ollama not found";
+
+/* Alert body when the ollama binary cannot be found */
+"alert.notFound.body" = "Install Ollama from https://ollama.com or run: brew install ollama";
+
+/* Alert title when the server fails to start */
+"alert.startFailed.title" = "Could not start Ollama";
+
+/* Alert title when warm-up is requested but no model is installed */
+"alert.noModels.title" = "No models installed";
+
+/* Alert body when warm-up is requested but no model is installed */
+"alert.noModels.body" = "Run `ollama pull <model>` first.";

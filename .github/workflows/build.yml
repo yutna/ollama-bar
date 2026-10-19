@@ -5,6 +5,13 @@ on:
   pull_request:
 
 jobs:
+  lint:
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Lint (swift-format)
+        run: make lint
+
   build:
     runs-on: macos-latest
     steps:

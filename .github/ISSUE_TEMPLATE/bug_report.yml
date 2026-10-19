@@ -1,0 +1,53 @@
+name: Bug report
+description: Something is not working as expected
+labels: [bug, triage]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for taking the time to file a report!
+  - type: input
+    id: macos
+    attributes:
+      label: macOS version
+      placeholder: "e.g. 15.6 — Apple menu → About This Mac"
+    validations:
+      required: true
+  - type: input
+    id: hardware
+    attributes:
+      label: Mac model / chip
+      placeholder: "e.g. MacBook Pro 14, M3 Pro, 36 GB"
+    validations:
+      required: true
+  - type: input
+    id: ollama
+    attributes:
+      label: Ollama version & install method
+      placeholder: "output of `ollama --version`, installed via brew / official app"
+    validations:
+      required: true
+  - type: input
+    id: ollamabar
+    attributes:
+      label: OllamaBar version
+      placeholder: "e.g. 1.0.0 — see the release page or run the binary with --help"
+    validations:
+      required: true
+  - type: textarea
+    id: what-happened
+    attributes:
+      label: What happened?
+      description: Steps to reproduce, what you expected, what happened instead.
+    validations:
+      required: true
+  - type: textarea
+    id: logs
+    attributes:
+      label: Relevant logs
+      description: |
+        Anything from `~/.ollama/logs/server.log`, error dialogs, or
+        `build/OllamaBar.app/Contents/MacOS/OllamaBar --status`.
+      render: shell
+    validations:
+      required: false
