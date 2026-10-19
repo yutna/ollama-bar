@@ -1,0 +1,74 @@
+/* Menu header when the server is stopped */
+"menu.status.stopped" = "○ Ollama 停止中";
+
+/* Menu header when the server is running without a loaded model */
+"menu.status.running" = "● Ollama 実行中 — モデル未読み込み";
+
+/* Menu header when the server is running with one or more loaded models. %@ is the model list */
+"menu.status.runningModels" = "● Ollama 実行中 — %@";
+
+/* Menu item that starts the server */
+"menu.start" = "▶︎ Ollama を起動（最適化済み設定）";
+
+/* Menu item that stops the server and frees RAM */
+"menu.stop" = "■ Ollama を停止（RAM を解放）";
+
+/* Menu item that preloads the first installed model */
+"menu.warm" = "🔥 モデルを事前読み込み";
+
+/* Menu item that toggles the login item */
+"menu.login" = "ログイン時にアイコンを表示";
+
+/* Menu item shown while the login item awaits approval in System Settings */
+"menu.login.pending" = "ログイン項目の承認が必要 — システム設定を開く";
+
+/* Accessibility label of the menu bar icon */
+"accessibility.icon" = "OllamaBar";
+
+/* Menu item that quits the app */
+"menu.quit" = "終了（Ollama も停止）";
+
+/* Tooltip when the server is stopped */
+"tooltip.stopped" = "Ollama 停止中 — クリックして起動";
+
+/* Tooltip when the server is running without a loaded model */
+"tooltip.running" = "Ollama 実行中 — モデル未読み込み";
+
+/* Tooltip when the server is running with a loaded model */
+"tooltip.runningLoaded" = "Ollama 実行中 — モデル読み込み済み";
+
+/* Alert title when the login item cannot be changed */
+"alert.login.title" = "ログイン項目を変更できません";
+
+/* Alert body when the login item cannot be changed. %@ is the error detail */
+"alert.login.body" = "「システム設定 → 一般 → ログイン項目」で手動で追加してください。\n\n%@";
+
+/* Alert title when the ollama binary cannot be found */
+"alert.notFound.title" = "Ollama が見つかりません";
+
+/* Alert body when the ollama binary cannot be found */
+"alert.notFound.body" = "https://ollama.com から Ollama をインストールするか、次を実行してください: brew install ollama";
+
+/* Alert title when the server fails to start */
+"alert.startFailed.title" = "Ollama を起動できません";
+
+/* Alert title when warm-up is requested but no model is installed */
+"alert.noModels.title" = "モデルがインストールされていません";
+
+/* Alert body when warm-up is requested but no model is installed */
+"alert.noModels.body" = "先に `ollama pull <model>` を実行してください。";
+
+/* Alert title when warm-up fails */
+"alert.warmFailed.title" = "モデルを事前読み込みできません";
+
+/* Alert body when warm-up fails. %@ is the model name */
+"alert.warmFailed.body" = "%@ の事前読み込みに失敗しました。詳細は ~/.ollama/logs/server.log を確認してください。";
+
+/* Error: the ollama executable is missing */
+"error.binaryNotFound" = "`ollama` 実行ファイルが見つかりませんでした。";
+
+/* Error: the server did not become ready in time. %d is a number of seconds */
+"error.launchTimeout" = "サーバーが %d 秒以内に起動しませんでした。";
+
+/* Error: readiness timeout with the tail of server.log. %d seconds, %@ log */
+"error.launchTimeoutWithLog" = "サーバーが %d 秒以内に起動しませんでした。\n\n%@";

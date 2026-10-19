@@ -1,0 +1,74 @@
+/* Menu header when the server is stopped */
+"menu.status.stopped" = "○ Ollama gestoppt";
+
+/* Menu header when the server is running without a loaded model */
+"menu.status.running" = "● Ollama läuft — kein Modell geladen";
+
+/* Menu header when the server is running with one or more loaded models. %@ is the model list */
+"menu.status.runningModels" = "● Ollama läuft — %@";
+
+/* Menu item that starts the server */
+"menu.start" = "▶︎ Ollama starten (optimierte Standardwerte)";
+
+/* Menu item that stops the server and frees RAM */
+"menu.stop" = "■ Ollama stoppen (RAM freigeben)";
+
+/* Menu item that preloads the first installed model */
+"menu.warm" = "🔥 Modell vorladen";
+
+/* Menu item that toggles the login item */
+"menu.login" = "Symbol beim Anmelden anzeigen";
+
+/* Menu item shown while the login item awaits approval in System Settings */
+"menu.login.pending" = "Anmeldeobjekt muss bestätigt werden — Systemeinstellungen öffnen";
+
+/* Accessibility label of the menu bar icon */
+"accessibility.icon" = "OllamaBar";
+
+/* Menu item that quits the app */
+"menu.quit" = "Beenden (stoppt auch Ollama)";
+
+/* Tooltip when the server is stopped */
+"tooltip.stopped" = "Ollama gestoppt — zum Starten klicken";
+
+/* Tooltip when the server is running without a loaded model */
+"tooltip.running" = "Ollama läuft — kein Modell geladen";
+
+/* Tooltip when the server is running with a loaded model */
+"tooltip.runningLoaded" = "Ollama läuft — Modell geladen";
+
+/* Alert title when the login item cannot be changed */
+"alert.login.title" = "Anmeldeobjekt konnte nicht geändert werden";
+
+/* Alert body when the login item cannot be changed. %@ is the error detail */
+"alert.login.body" = "Füge es manuell unter Systemeinstellungen → Allgemein → Anmeldeobjekte hinzu.\n\n%@";
+
+/* Alert title when the ollama binary cannot be found */
+"alert.notFound.title" = "Ollama nicht gefunden";
+
+/* Alert body when the ollama binary cannot be found */
+"alert.notFound.body" = "Installiere Ollama von https://ollama.com oder führe aus: brew install ollama";
+
+/* Alert title when the server fails to start */
+"alert.startFailed.title" = "Ollama konnte nicht gestartet werden";
+
+/* Alert title when warm-up is requested but no model is installed */
+"alert.noModels.title" = "Keine Modelle installiert";
+
+/* Alert body when warm-up is requested but no model is installed */
+"alert.noModels.body" = "Führe zuerst `ollama pull <model>` aus.";
+
+/* Alert title when warm-up fails */
+"alert.warmFailed.title" = "Modell konnte nicht vorgeladen werden";
+
+/* Alert body when warm-up fails. %@ is the model name */
+"alert.warmFailed.body" = "Vorladen von %@ fehlgeschlagen. Details unter ~/.ollama/logs/server.log.";
+
+/* Error: the ollama executable is missing */
+"error.binaryNotFound" = "Die ausführbare Datei `ollama` wurde nicht gefunden.";
+
+/* Error: the server did not become ready in time. %d is a number of seconds */
+"error.launchTimeout" = "Der Server war nicht innerhalb von %d Sekunden bereit.";
+
+/* Error: readiness timeout with the tail of server.log. %d seconds, %@ log */
+"error.launchTimeoutWithLog" = "Der Server war nicht innerhalb von %d Sekunden bereit.\n\n%@";

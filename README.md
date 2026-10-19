@@ -34,7 +34,7 @@ starts only when you ask it to.
 - Warm-up button to preload a model before you open your editor (embedding-only models are skipped, and the model is pinned with `keep_alive`)
 - Optional "Show icon at login" (icon only — Ollama itself stays off until you click Start)
 - CLI mode for scripts (`--start`, `--stop`, `--status`, `--warm`, `--help`)
-- Localized UI (English / ไทย) — follows your system language
+- Localized UI — English, ไทย, 日本語, 简体中文, 한국어, Español, Français, Deutsch — follows your system language
 - Finds Ollama wherever it lives: Homebrew (Apple Silicon or Intel) or the official app
 
 ## Requirements
@@ -149,9 +149,12 @@ output.
 
 ## Localization
 
-The UI ships in English and Thai (`resources/<language>.lproj/Localizable.strings`)
-and follows your system language. Adding another language is just a new
-`.lproj` directory — PRs welcome.
+The UI ships in English, Thai, Japanese, Simplified Chinese, Korean, Spanish,
+French and German (`resources/<language>.lproj/Localizable.strings`) and follows
+your system language. Adding another language is just a new `.lproj` directory:
+copy `resources/en.lproj/`, translate the values, list the language in
+`resources/Info.plist` — `make lint` checks key parity, format specifiers and
+the `Info.plist` entry for you.
 
 ## Notes & limitations
 
