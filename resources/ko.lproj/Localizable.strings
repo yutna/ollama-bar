@@ -1,0 +1,74 @@
+/* Menu header when the server is stopped */
+"menu.status.stopped" = "○ Ollama 중지됨";
+
+/* Menu header when the server is running without a loaded model */
+"menu.status.running" = "● Ollama 실행 중 — 모델 없음";
+
+/* Menu header when the server is running with one or more loaded models. %@ is the model list */
+"menu.status.runningModels" = "● Ollama 실행 중 — %@";
+
+/* Menu item that starts the server */
+"menu.start" = "▶︎ Ollama 시작 (최적화 기본값)";
+
+/* Menu item that stops the server and frees RAM */
+"menu.stop" = "■ Ollama 중지 (RAM 확보)";
+
+/* Menu item that preloads the first installed model */
+"menu.warm" = "🔥 모델 미리 로드";
+
+/* Menu item that toggles the login item */
+"menu.login" = "로그인 시 아이콘 표시";
+
+/* Menu item shown while the login item awaits approval in System Settings */
+"menu.login.pending" = "로그인 항목 승인 필요 — 시스템 설정 열기";
+
+/* Accessibility label of the menu bar icon */
+"accessibility.icon" = "OllamaBar";
+
+/* Menu item that quits the app */
+"menu.quit" = "종료 (Ollama도 중지)";
+
+/* Tooltip when the server is stopped */
+"tooltip.stopped" = "Ollama 중지됨 — 클릭하여 시작";
+
+/* Tooltip when the server is running without a loaded model */
+"tooltip.running" = "Ollama 실행 중 — 모델 없음";
+
+/* Tooltip when the server is running with a loaded model */
+"tooltip.runningLoaded" = "Ollama 실행 중 — 모델 로드됨";
+
+/* Alert title when the login item cannot be changed */
+"alert.login.title" = "로그인 항목을 변경할 수 없습니다";
+
+/* Alert body when the login item cannot be changed. %@ is the error detail */
+"alert.login.body" = "「시스템 설정 → 일반 → 로그인 항목」에서 직접 추가하세요.\n\n%@";
+
+/* Alert title when the ollama binary cannot be found */
+"alert.notFound.title" = "Ollama를 찾을 수 없습니다";
+
+/* Alert body when the ollama binary cannot be found */
+"alert.notFound.body" = "https://ollama.com에서 Ollama를 설치하거나 다음을 실행하세요: brew install ollama";
+
+/* Alert title when the server fails to start */
+"alert.startFailed.title" = "Ollama를 시작할 수 없습니다";
+
+/* Alert title when warm-up is requested but no model is installed */
+"alert.noModels.title" = "설치된 모델이 없습니다";
+
+/* Alert body when warm-up is requested but no model is installed */
+"alert.noModels.body" = "먼저 `ollama pull <model>`을 실행하세요.";
+
+/* Alert title when warm-up fails */
+"alert.warmFailed.title" = "모델을 미리 로드할 수 없습니다";
+
+/* Alert body when warm-up fails. %@ is the model name */
+"alert.warmFailed.body" = "%@ 미리 로드에 실패했습니다. 자세한 내용은 ~/.ollama/logs/server.log를 확인하세요.";
+
+/* Error: the ollama executable is missing */
+"error.binaryNotFound" = "`ollama` 실행 파일을 찾을 수 없습니다.";
+
+/* Error: the server did not become ready in time. %d is a number of seconds */
+"error.launchTimeout" = "서버가 %d초 안에 준비되지 않았습니다.";
+
+/* Error: readiness timeout with the tail of server.log. %d seconds, %@ log */
+"error.launchTimeoutWithLog" = "서버가 %d초 안에 준비되지 않았습니다.\n\n%@";

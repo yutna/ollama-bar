@@ -17,7 +17,7 @@ build:
 	mkdir -p "$(APP)/Contents/MacOS" "$(APP)/Contents/Resources"
 	cp resources/Info.plist "$(APP)/Contents/Info.plist"
 	cp resources/AppIcon.icns "$(APP)/Contents/Resources/"
-	cp -R resources/en.lproj resources/th.lproj "$(APP)/Contents/Resources/"
+	cp -R resources/*.lproj "$(APP)/Contents/Resources/"
 	cp "$$($(SWIFT) build -c $(CONFIG) $(ARCH_FLAGS) --show-bin-path)/$(APP_NAME)" "$(APP)/Contents/MacOS/$(APP_NAME)"
 	codesign --force --sign - "$(APP)" 2>/dev/null || true
 	@echo "Built $(APP)"
@@ -40,7 +40,7 @@ test:
 
 lint:
 	$(FORMAT) lint --configuration .swift-format --recursive Sources
-	perl scripts/check-strings.pl resources/en.lproj/Localizable.strings resources/th.lproj/Localizable.strings
+	perl scripts/check-strings.pl
 
 format:
 	$(FORMAT) format --in-place --configuration .swift-format --recursive Sources
