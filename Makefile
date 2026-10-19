@@ -16,6 +16,7 @@ build:
 	rm -rf "$(APP)"
 	mkdir -p "$(APP)/Contents/MacOS" "$(APP)/Contents/Resources"
 	cp resources/Info.plist "$(APP)/Contents/Info.plist"
+	cp resources/AppIcon.icns "$(APP)/Contents/Resources/"
 	cp -R resources/en.lproj resources/th.lproj "$(APP)/Contents/Resources/"
 	cp "$$($(SWIFT) build -c $(CONFIG) $(ARCH_FLAGS) --show-bin-path)/$(APP_NAME)" "$(APP)/Contents/MacOS/$(APP_NAME)"
 	codesign --force --sign - "$(APP)" 2>/dev/null || true
