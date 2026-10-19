@@ -110,7 +110,8 @@ OLLAMABAR_CONTEXT_LENGTH=32768 ./build/OllamaBar.app/Contents/MacOS/OllamaBar --
 
 Supported overrides: `OLLAMABAR_PORT`, `OLLAMABAR_KEEP_ALIVE`,
 `OLLAMABAR_CONTEXT_LENGTH`, `OLLAMABAR_MAX_LOADED_MODELS`,
-`OLLAMABAR_FLASH_ATTENTION`, `OLLAMABAR_KV_CACHE_TYPE`.
+`OLLAMABAR_FLASH_ATTENTION`, `OLLAMABAR_KV_CACHE_TYPE`,
+`OLLAMABAR_LOG_MAX_BYTES`.
 
 Every override is validated: a typo, an out-of-range port or an invalid
 duration falls back to the default instead of pointing the app at a server
@@ -141,7 +142,9 @@ output.
 
 - **Start** spawns `ollama serve` as a child process with the environment
   above (including `OLLAMA_HOST=127.0.0.1:<port>`) and logs to
-  `~/.ollama/logs/server.log`. The log is rotated when it exceeds 10 MB.
+  `~/.ollama/logs/server.log`. The log is rotated while the server runs once
+  it exceeds `OLLAMABAR_LOG_MAX_BYTES` (10 MB by default); the file it
+  replaces is kept as `server.log.1`.
 - **Stop** asks Ollama to unload each loaded model, then terminates the server
   (and any user-owned `ollama serve` / `ollama runner` process, so memory is
   always freed), escalating to SIGKILL if a process refuses to exit.

@@ -102,6 +102,33 @@ case "$CLI_OUTPUT" in
         ;;
 esac
 
+echo "== log pump drains stdin and rotates past the cap =="
+pump_dir="${TMPDIR:-/tmp}/ollamabar-pump-$$"
+pump_log="$pump_dir/server.log"
+mkdir -p "$pump_dir"
+# ~9 KB of input with a 1 KB cap must rotate at least once.
+i=0
+while [ "$i" -lt 200 ]; do
+    echo "line $i 0123456789abcdefghijklmnopqrstuvwxyz"
+    i=$((i + 1))
+done | OLLAMABAR_LOG_MAX_BYTES=1024 "$BIN" --log-pump "$pump_log"
+if [ ! -s "$pump_log.1" ]; then
+    echo "FAIL: log pump did not rotate past the 1 KB cap"
+    exit 1
+fi
+grep -q "line 0 " "$pump_log.1" || {
+    echo "FAIL: rotated log does not contain the first lines"
+    exit 1
+}
+current=$(wc -c <"$pump_log" | tr -d ' ')
+if [ "$current" -gt 1024 ]; then
+    echo "FAIL: log pump left $current bytes, above the 1 KB cap"
+    exit 1
+fi
+previous=$(wc -c <"$pump_log.1" | tr -d ' ')
+echo "log: $current bytes, rotated: $previous bytes"
+rm -rf "$pump_dir"
+
 PORT="$BASE_PORT"
 echo "== healthy fake server =="
 start_fake "$PORT" healthy

@@ -29,6 +29,10 @@ public final class OllamaService {
     private let api: OllamaAPI
     private let lifecycle = LifecycleGate()
 
+    /// Kept between `attachLog` and a successful spawn: the parent's copies of
+    /// the pipe are closed once the child owns the write end.
+    private var logPipe: Pipe?
+
     /// How long `start()` waits for the API to answer, in seconds.
     static let startupTimeout: TimeInterval = 8
 
@@ -213,8 +217,10 @@ public final class OllamaService {
             do {
                 try process.run()
             } catch {
+                closeLogPipe()
                 throw OllamaError.launchFailed(error.localizedDescription)
             }
+            closeLogPipe()
             serverProcess = process
 
             if waitUntilReady(process: process, timeout: Self.startupTimeout) { return }
@@ -326,7 +332,7 @@ public final class OllamaService {
 
     /// Last few lines of `server.log`, for error alerts.
     private func logTail(lines: Int = 10) -> String {
-        let file = NSHomeDirectory() + "/.ollama/logs/server.log"
+        let file = Self.logFilePath
         guard let handle = try? FileHandle(forReadingFrom: URL(fileURLWithPath: file)) else {
             return ""
         }
@@ -339,15 +345,42 @@ public final class OllamaService {
         return text.split(separator: "\n").suffix(lines).joined(separator: "\n")
     }
 
+    /// Where the server writes its log.
+    static let logFilePath = NSHomeDirectory() + "/.ollama/logs/server.log"
+
+    /// Captures the child's output into `server.log` through a pipe and a log
+    /// pump (the app started with `--log-pump`).
+    ///
+    /// The pump is a separate process because the log has to outlive the
+    /// process that started the server: with an in-process reader, a CLI
+    /// `--start` (or a crashed app) would close the pipe and the still-running
+    /// server would die with SIGPIPE at its next log write. Rotation while the
+    /// server runs only works when the writer is the app's side of the pipe.
     private func attachLog(to process: Process) {
-        let directory = NSHomeDirectory() + "/.ollama/logs"
-        try? FileManager.default.createDirectory(atPath: directory, withIntermediateDirectories: true)
-        let file = directory + "/server.log"
-        Self.rotateLogIfNeeded(at: file)
-        if !FileManager.default.fileExists(atPath: file) {
-            _ = FileManager.default.createFile(atPath: file, contents: nil)
+        let pipe = Pipe()
+        // Do not leak the pipe ends into helper processes: an inherited
+        // duplicate of the write end would keep the pump waiting for an EOF
+        // that never comes.
+        Self.setCloseOnExec(pipe.fileHandleForReading.fileDescriptor)
+        Self.setCloseOnExec(pipe.fileHandleForWriting.fileDescriptor)
+        guard let executable = Bundle.main.executableURL,
+            Self.spawnLogPump(executable, input: pipe)
+        else {
+            attachFileLog(to: process)
+            return
         }
-        if let handle = try? FileHandle(forWritingTo: URL(fileURLWithPath: file)) {
+        logPipe = pipe
+        process.standardOutput = pipe
+        process.standardError = pipe
+    }
+
+    /// Fallback when the pump cannot be started: the child writes the file
+    /// itself, which the app can only rotate at the next start.
+    private func attachFileLog(to process: Process) {
+        let writer = RotatingLogWriter(path: Self.logFilePath)
+        writer.open()
+        writer.close()
+        if let handle = try? FileHandle(forWritingTo: URL(fileURLWithPath: Self.logFilePath)) {
             handle.seekToEndOfFile()
             process.standardOutput = handle
             process.standardError = handle
@@ -357,19 +390,31 @@ public final class OllamaService {
         }
     }
 
-    /// Largest log file kept before it is rotated to `server.log.1`.
-    static let maxLogBytes: UInt64 = 10 * 1024 * 1024
+    /// Starts the current binary in its hidden log-pump mode.
+    private static func spawnLogPump(_ executable: URL, input: Pipe) -> Bool {
+        let pump = Process()
+        pump.executableURL = executable
+        pump.arguments = ["--log-pump", logFilePath]
+        pump.standardInput = input
+        pump.standardOutput = FileHandle.nullDevice
+        pump.standardError = FileHandle.nullDevice
+        do {
+            try pump.run()
+            return true
+        } catch {
+            return false
+        }
+    }
 
-    /// Moves `server.log` aside when it grew beyond `maxBytes`, so the log
-    /// cannot fill the disk over time. The previous rotation is replaced.
-    static func rotateLogIfNeeded(at path: String, maxBytes: UInt64 = maxLogBytes) {
-        guard
-            let attributes = try? FileManager.default.attributesOfItem(atPath: path),
-            let size = attributes[.size] as? UInt64,
-            size > maxBytes
-        else { return }
-        let rotated = path + ".1"
-        try? FileManager.default.removeItem(atPath: rotated)
-        try? FileManager.default.moveItem(atPath: path, toPath: rotated)
+    private static func setCloseOnExec(_ descriptor: Int32) {
+        _ = fcntl(descriptor, F_SETFD, FD_CLOEXEC)
+    }
+
+    /// Closes the parent's copies of the log pipe once the child has its own.
+    private func closeLogPipe() {
+        guard let pipe = logPipe else { return }
+        logPipe = nil
+        try? pipe.fileHandleForReading.close()
+        try? pipe.fileHandleForWriting.close()
     }
 }
