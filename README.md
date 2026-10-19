@@ -33,7 +33,7 @@ starts only when you ask it to.
 - Optimized defaults out of the box: keep-alive `-1`, 64k context, a single loaded model
 - Warm-up button to preload a model before you open your editor (embedding-only models are skipped, and the model is pinned with `keep_alive`)
 - Optional "Show icon at login" (icon only — Ollama itself stays off until you click Start)
-- CLI mode for scripts (`--start`, `--stop`, `--status`, `--warm`, `--help`)
+- CLI mode for scripts (`--start`, `--stop`, `--status`, `--warm`, `--help`, `--version`); unknown options print the usage and exit 2
 - Localized UI — English, ไทย, 日本語, 简体中文, 한국어, Español, Français, Deutsch — follows your system language
 - Finds Ollama wherever it lives: Homebrew (Apple Silicon or Intel) or the official app
 

@@ -7,10 +7,11 @@ import OllamaBarCore
 
 let arguments = Array(CommandLine.arguments.dropFirst())
 
-// Enter CLI mode only for flags we know; Cocoa itself passes arguments such
-// as `-AppleLanguages` or `-psn_...` when the app is launched by the system.
-let cliFlags: Set<String> = ["--start", "--stop", "--status", "--warm", "--help", "-h"]
-if arguments.contains(where: { cliFlags.contains($0) }) {
+// Enter CLI mode for options the user typed. Cocoa itself passes single-dash
+// arguments such as `-AppleLanguages` or `-psn_...` when the app is launched
+// by the system. Unknown `--` options go to the CLI as well: `CLI.run` prints
+// the usage and exits instead of silently starting the menu bar app.
+if arguments.contains(where: { $0.hasPrefix("--") || CLI.flags.contains($0) }) {
     CLI.run(arguments)
 }
 

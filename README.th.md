@@ -32,7 +32,7 @@ OllamaBar เปลี่ยนให้เหลือแค่คลิกเ�
 - ค่าเริ่มต้นที่เหมาะกับงานจริง: keep-alive `-1`, context 64k, โหลดทีละโมเดล
 - ปุ่ม warm-up โหลดโมเดลก่อนเปิด editor (ข้ามโมเดล embedding ล้วน และปักหมุดโมเดลด้วย `keep_alive`)
 - "แสดงไอคอนตอนล็อกอิน" แบบเลือกได้ (เฉพาะไอคอน — Ollama ยังไม่ทำงานจนกว่าจะกดเริ่ม)
-- โหมด CLI สำหรับ script (`--start`, `--stop`, `--status`, `--warm`, `--help`)
+- โหมด CLI สำหรับ script (`--start`, `--stop`, `--status`, `--warm`, `--help`, `--version`) — option ที่ไม่รู้จักจะพิมพ์ usage แล้ว exit 2
 - UI หลายภาษา — English, ไทย, 日本語, 简体中文, 한국어, Español, Français, Deutsch — ตามภาษาของระบบ
 - หา Ollama เจอไม่ว่าจะติดตั้งที่ไหน: Homebrew (Apple Silicon หรือ Intel) หรือแอปทางการ
 
