@@ -3,6 +3,7 @@
 // Part of OllamaBar — https://github.com/yutna/ollama-bar
 
 import AppKit
+import OllamaBarCore
 
 let arguments = Array(CommandLine.arguments.dropFirst())
 

@@ -30,8 +30,13 @@ enum Config {
     /// Base URL of the local API.
     static var apiBase: String { "http://127.0.0.1:\(port)" }
 
-    private static func env(_ key: String, _ fallback: String) -> String {
-        if let value = ProcessInfo.processInfo.environment[key], !value.isEmpty {
+    /// Reads an environment override, falling back when it is missing or empty.
+    static func env(
+        _ key: String,
+        _ fallback: String,
+        in environment: [String: String] = ProcessInfo.processInfo.environment
+    ) -> String {
+        if let value = environment[key], !value.isEmpty {
             return value
         }
         return fallback

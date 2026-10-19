@@ -7,7 +7,7 @@ ARCH_FLAGS ?=
 SWIFT      ?= swift
 FORMAT     ?= xcrun swift-format
 
-.PHONY: all build install uninstall run lint format release-zip clean
+.PHONY: all build install uninstall run test lint format release-zip clean
 
 all: build
 
@@ -33,6 +33,9 @@ uninstall:
 
 run: build
 	open "$(APP)"
+
+test:
+	$(SWIFT) test
 
 lint:
 	$(FORMAT) lint --configuration .swift-format --recursive Sources

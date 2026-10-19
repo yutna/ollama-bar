@@ -22,6 +22,7 @@ git clone https://github.com/yutna/ollama-bar.git
 cd ollama-bar
 make build      # builds build/OllamaBar.app via SwiftPM
 make run        # build and launch
+make test       # unit tests (SwiftPM)
 make lint       # swift-format lint (CI runs this)
 make format     # apply Swift formatting in place
 ```
@@ -41,14 +42,16 @@ $BIN --stop  && $BIN --status   # stopped
 | --- | --- |
 | `Sources/OllamaBar/main.swift` | Entry point: CLI flags vs. menu bar app |
 | `Sources/OllamaBar/AppDelegate.swift` | Menu bar UI, user actions |
-| `Sources/OllamaBar/OllamaService.swift` | Server lifecycle + `/api` calls |
-| `Sources/OllamaBar/Config.swift` | Env-overridable defaults |
-| `Sources/OllamaBar/Shell.swift` | Small `Process` helpers |
-| `Sources/OllamaBar/CLI.swift` | Scriptable `--start/--stop/--status/--warm` |
-| `Sources/OllamaBar/L10n.swift` | Typed access to user-facing strings |
+| `Sources/OllamaBarCore/OllamaService.swift` | Server lifecycle + `/api` calls |
+| `Sources/OllamaBarCore/Config.swift` | Env-overridable defaults |
+| `Sources/OllamaBarCore/Shell.swift` | Small `Process` helpers |
+| `Sources/OllamaBarCore/CLI.swift` | Scriptable `--start/--stop/--status/--warm` |
+| `Sources/OllamaBarCore/L10n.swift` | Typed access to user-facing strings |
+| `Tests/OllamaBarCoreTests/` | Unit tests for `OllamaBarCore` |
+| `scripts/` | CI helpers (fake Ollama API, smoke test) |
 | `resources/*.lproj/` | Localized strings |
 | `resources/Info.plist` | Bundle metadata |
-| `Makefile` | build / install / lint / release-zip targets |
+| `Makefile` | build / install / test / lint / release-zip targets |
 | `Package.swift` | SwiftPM manifest |
 
 ## Code style

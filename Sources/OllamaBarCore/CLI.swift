@@ -8,8 +8,8 @@ import Foundation
 ///
 /// The CLI intentionally stays in English: it targets scripts and CI,
 /// not the localized UI.
-enum CLI {
-    static func run(_ arguments: [String]) -> Never {
+public enum CLI {
+    public static func run(_ arguments: [String]) -> Never {
         let service = OllamaService()
 
         if arguments.contains("--start") {
