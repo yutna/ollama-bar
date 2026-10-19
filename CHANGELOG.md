@@ -6,6 +6,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.1.0] — 2026-10-19
+
+### Added
+
+- Six more UI languages — 日本語, 简体中文, 한국어, Español, Français and Deutsch —
+  bringing the app to eight languages; it still follows your system language and
+  falls back to English when yours is not translated yet
+- `make lint` now verifies that every `resources/*.lproj` is declared in
+  `CFBundleLocalizations` (and vice versa) and that all translations share the
+  same keys and format specifiers
+
+### Changed
+
+- The app bundle ships every `resources/*.lproj` directory instead of a
+  hardcoded list, so adding a language is a one-directory change
+
 ## [1.0.1] — 2026-10-19
 
 ### Fixed
@@ -60,6 +76,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Homebrew (Apple Silicon / Intel) and official-app binary auto-detection
 - GitHub Actions CI (build + `swift-format` lint) and tag-driven release workflow
 
-[Unreleased]: https://github.com/yutna/ollama-bar/compare/v1.0.1...HEAD
+[Unreleased]: https://github.com/yutna/ollama-bar/compare/v1.1.0...HEAD
+[1.1.0]: https://github.com/yutna/ollama-bar/releases/tag/v1.1.0
 [1.0.1]: https://github.com/yutna/ollama-bar/releases/tag/v1.0.1
 [1.0.0]: https://github.com/yutna/ollama-bar/releases/tag/v1.0.0
