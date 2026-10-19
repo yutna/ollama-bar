@@ -15,7 +15,8 @@ enum Config {
     struct Settings: Equatable {
         /// Port the Ollama API listens on.
         var port: String
-        /// How long models stay loaded after the last request (`-1` = forever).
+        /// How long models stay loaded after the last request (`-1` = forever,
+        /// `0` = unload immediately).
         var keepAlive: String
         /// Default context window, in tokens.
         var contextLength: String
@@ -100,10 +101,10 @@ enum Config {
         return String(number)
     }
 
-    /// `-1` (keep forever), a positive number of seconds, or a duration such as
-    /// `30s`, `5m`, `2h`.
+    /// `-1` (keep forever), `0` (unload immediately), a positive number of
+    /// seconds, or a duration such as `30s`, `5m`, `2h`.
     static func validatedKeepAlive(_ value: String) -> String? {
-        if value == "-1" { return value }
+        if value == "-1" || value == "0" { return value }
         if let seconds = Int(value), seconds > 0 { return String(seconds) }
         if value.range(of: #"^[0-9]+(ms|s|m|h)$"#, options: .regularExpression) != nil { return value }
         return nil

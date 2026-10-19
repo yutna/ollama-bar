@@ -20,13 +20,21 @@ final class ConfigValidationTests: XCTestCase {
 
     func testKeepAliveForms() {
         XCTAssertEqual(Config.validatedKeepAlive("-1"), "-1")
+        XCTAssertEqual(Config.validatedKeepAlive("0"), "0")
+        XCTAssertEqual(Config.validatedKeepAlive("0s"), "0s")
         XCTAssertEqual(Config.validatedKeepAlive("300"), "300")
         XCTAssertEqual(Config.validatedKeepAlive("5m"), "5m")
         XCTAssertEqual(Config.validatedKeepAlive("2h"), "2h")
         XCTAssertEqual(Config.validatedKeepAlive("1500ms"), "1500ms")
         XCTAssertNil(Config.validatedKeepAlive("forever"))
-        XCTAssertNil(Config.validatedKeepAlive("0"))
         XCTAssertNil(Config.validatedKeepAlive("-2"))
+    }
+
+    func testKeepAliveZeroIsNotReplacedByTheForeverDefault() {
+        // Regression: `0` used to be rejected and fell back to `-1`, which
+        // means the opposite (keep the model loaded forever).
+        XCTAssertEqual(Config.resolve(env: ["OLLAMABAR_KEEP_ALIVE": "0"]).keepAlive, "0")
+        XCTAssertEqual(Config.resolve(env: ["OLLAMABAR_KEEP_ALIVE": "0s"]).keepAlive, "0s")
     }
 
     func testPositiveIntValidation() {
