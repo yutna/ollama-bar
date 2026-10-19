@@ -127,6 +127,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         menu.removeAllItems()
 
         let running = state.isRunning
+        let ownsServer = service.ownsRunningServer
         let models = state.loadedModels
 
         let header = NSMenuItem(title: statusTitle(running: running, models: models), action: nil, keyEquivalent: "")
@@ -134,13 +135,19 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         menu.addItem(header)
         menu.addItem(.separator())
 
-        if running {
+        // Stop is also offered while this instance owns a live `ollama serve`
+        // process the API does not answer (still starting, or hung): `start()`
+        // refuses to spawn twice and returns silently, so Start would be a
+        // dead end and stopping the process is the only way out.
+        if running || ownsServer {
             addItem(to: menu, title: L10n.menuStop, action: #selector(stopAction))
-            if models.isEmpty {
-                addItem(to: menu, title: L10n.menuWarm, action: #selector(warmAction))
-            }
         } else {
             addItem(to: menu, title: L10n.menuStart, action: #selector(startAction))
+        }
+        // Warm-up needs a server that answers, so it stays hidden in the
+        // unresponsive state even though Stop is offered there.
+        if running && models.isEmpty {
+            addItem(to: menu, title: L10n.menuWarm, action: #selector(warmAction))
         }
         menu.addItem(.separator())
 
