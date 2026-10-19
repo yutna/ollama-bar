@@ -4,17 +4,13 @@ on:
   push:
   pull_request:
 
-jobs:
-  lint:
-    runs-on: macos-latest
-    steps:
-      - uses: actions/checkout@v7
-      - name: Lint (swift-format)
-        run: make lint
+permissions:
+  contents: read
 
-  build:
-    runs-on: macos-latest
-    steps:
-      - uses: actions/checkout@v7
-      - name: Build app bundle
-        run: make build
+concurrency:
+  group: build-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  ci:
+    uses: ./.github/workflows/ci.yml
