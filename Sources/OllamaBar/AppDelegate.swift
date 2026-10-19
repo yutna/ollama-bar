@@ -3,6 +3,7 @@
 // Part of OllamaBar — https://github.com/yutna/ollama-bar
 
 import AppKit
+import OllamaBarCore
 import ServiceManagement
 
 /// Menu bar UI and user actions.

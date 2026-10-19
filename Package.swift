@@ -8,9 +8,19 @@ let package = Package(
     name: "OllamaBar",
     platforms: [.macOS(.v13)],
     targets: [
+        .target(
+            name: "OllamaBarCore",
+            path: "Sources/OllamaBarCore"
+        ),
         .executableTarget(
             name: "OllamaBar",
+            dependencies: ["OllamaBarCore"],
             path: "Sources/OllamaBar"
-        )
+        ),
+        .testTarget(
+            name: "OllamaBarCoreTests",
+            dependencies: ["OllamaBarCore"],
+            path: "Tests/OllamaBarCoreTests"
+        ),
     ]
 )

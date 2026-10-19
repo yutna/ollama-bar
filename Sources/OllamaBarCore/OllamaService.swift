@@ -5,11 +5,11 @@
 import Foundation
 
 /// Errors surfaced to the user when the server cannot be managed.
-enum OllamaError: LocalizedError {
+public enum OllamaError: LocalizedError {
     case binaryNotFound
     case launchFailed(String)
 
-    var errorDescription: String? {
+    public var errorDescription: String? {
         switch self {
         case .binaryNotFound:
             return "The `ollama` executable could not be found."
@@ -20,7 +20,7 @@ enum OllamaError: LocalizedError {
 }
 
 /// Owns the lifecycle of the local Ollama server and talks to its HTTP API.
-final class OllamaService {
+public final class OllamaService {
     private(set) var serverProcess: Process?
 
     /// Where the `ollama` CLI usually lives, in order of preference.
@@ -32,13 +32,15 @@ final class OllamaService {
         "/Applications/Ollama.app/Contents/Resources/ollama",  // Official app bundle
     ]
 
+    public init() {}
+
     // MARK: - API
 
     /// `true` when the local API answers.
-    var isServerRunning: Bool { api("/api/version") != nil }
+    public var isServerRunning: Bool { api("/api/version") != nil }
 
     /// Names of all models currently loaded in memory.
-    var loadedModelNames: [String] {
+    public var loadedModelNames: [String] {
         guard let json = api("/api/ps"),
             let models = jsonObject(json)?["models"] as? [[String: Any]]
         else { return [] }
@@ -46,7 +48,7 @@ final class OllamaService {
     }
 
     /// The first installed model, used for warm-up.
-    var firstInstalledModel: String? {
+    public var firstInstalledModel: String? {
         guard let json = api("/api/tags"),
             let models = jsonObject(json)?["models"] as? [[String: Any]],
             let first = models.first
@@ -66,7 +68,7 @@ final class OllamaService {
     // MARK: - Lifecycle
 
     /// Full path of the `ollama` executable, if one can be found.
-    var binaryPath: String? {
+    public var binaryPath: String? {
         for path in Self.binaryCandidates where FileManager.default.isExecutableFile(atPath: path) {
             return path
         }
@@ -79,7 +81,7 @@ final class OllamaService {
     }
 
     /// Starts `ollama serve` with the optimized environment.
-    func start() throws {
+    public func start() throws {
         guard !isServerRunning else { return }
         guard let binary = binaryPath else { throw OllamaError.binaryNotFound }
 
@@ -108,7 +110,7 @@ final class OllamaService {
     ///
     /// The `pkill` calls also catch `ollama serve` instances that were started
     /// outside the app, so "stop" always means "nothing is left running".
-    func stop() {
+    public func stop() {
         if let binary = binaryPath, isServerRunning {
             for model in loadedModelNames {
                 Shell.run(binary, ["stop", model])
@@ -124,7 +126,7 @@ final class OllamaService {
 
     /// Preloads the first installed model so the next request is instant.
     @discardableResult
-    func warmUp() -> Bool {
+    public func warmUp() -> Bool {
         guard let model = firstInstalledModel else { return false }
         let body = "{\"model\":\"\(model)\"}"
         return Shell.run(
