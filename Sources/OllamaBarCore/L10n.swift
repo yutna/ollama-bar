@@ -107,4 +107,28 @@ public enum L10n {
             localized: "alert.warmFailed.body",
             defaultValue: "Preloading %@ failed. Check ~/.ollama/logs/server.log for details.")
     }
+
+    // MARK: - Errors
+
+    public static var errorBinaryNotFound: String {
+        String(
+            localized: "error.binaryNotFound",
+            defaultValue: "The `ollama` executable could not be found.")
+    }
+
+    public static func errorLaunchTimeout(_ seconds: Int) -> String {
+        String(
+            format: String(
+                localized: "error.launchTimeout",
+                defaultValue: "The server did not become ready within %d seconds."),
+            seconds)
+    }
+
+    public static func errorLaunchTimeoutWithLog(_ seconds: Int, _ log: String) -> String {
+        String(
+            format: String(
+                localized: "error.launchTimeoutWithLog",
+                defaultValue: "The server did not become ready within %d seconds.\n\n%@"),
+            seconds, log)
+    }
 }

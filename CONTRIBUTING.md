@@ -23,7 +23,7 @@ cd ollama-bar
 make build      # builds build/OllamaBar.app via SwiftPM
 make run        # build and launch
 make test       # unit tests (SwiftPM)
-make lint       # swift-format lint (CI runs this)
+make lint       # swift-format + localization checks (CI runs this)
 make format     # apply Swift formatting in place
 ```
 

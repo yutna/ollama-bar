@@ -63,3 +63,12 @@
 
 /* Alert body when warm-up fails. %@ is the model name */
 "alert.warmFailed.body" = "Preloading %@ failed. Check ~/.ollama/logs/server.log for details.";
+
+/* Error: the ollama executable is missing */
+"error.binaryNotFound" = "The `ollama` executable could not be found.";
+
+/* Error: the server did not become ready in time. %d is a number of seconds */
+"error.launchTimeout" = "The server did not become ready within %d seconds.";
+
+/* Error: readiness timeout with the tail of server.log. %d seconds, %@ log */
+"error.launchTimeoutWithLog" = "The server did not become ready within %d seconds.\n\n%@";
