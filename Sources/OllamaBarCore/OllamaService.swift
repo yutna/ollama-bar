@@ -252,6 +252,10 @@ public final class OllamaService {
             process.environment = environment
             attachLog(to: process)
 
+            // Everything already in the log belongs to an earlier session;
+            // only what this start appends can explain a failure.
+            let logOffset = Self.logFileSize(at: Self.logFilePath)
+
             do {
                 try process.run()
             } catch {
@@ -268,7 +272,7 @@ public final class OllamaService {
                 _ = waitForProcessExit(process, timeout: 2)
             }
             serverProcess = nil
-            throw OllamaError.launchFailed(startFailureReason())
+            throw OllamaError.launchFailed(startFailureReason(since: logOffset))
         }
     }
 
@@ -365,28 +369,45 @@ public final class OllamaService {
 
     // MARK: - Logging
 
-    /// Human-readable reason for a failed start, including the log tail.
-    private func startFailureReason() -> String {
+    /// Human-readable reason for a failed start: what this start wrote to the
+    /// log, when it wrote anything at all.
+    private func startFailureReason(since offset: UInt64) -> String {
         let seconds = Int(Self.startupTimeout)
-        let tail = logTail()
+        // The pump writes from another process: give it a moment to drain the
+        // child's last output before reading the file.
+        Thread.sleep(forTimeInterval: 0.2)
+        let tail = Self.logTail(at: Self.logFilePath, since: offset)
         guard !tail.isEmpty else {
             return L10n.errorLaunchTimeout(seconds)
         }
         return L10n.errorLaunchTimeoutWithLog(seconds, tail)
     }
 
-    /// Last few lines of `server.log`, for error alerts.
-    private func logTail(lines: Int = 10) -> String {
-        let file = Self.logFilePath
-        guard let handle = try? FileHandle(forReadingFrom: URL(fileURLWithPath: file)) else {
+    /// Size of `path`, or 0 when it does not exist yet.
+    static func logFileSize(at path: String) -> UInt64 {
+        let attributes = try? FileManager.default.attributesOfItem(atPath: path)
+        return (attributes?[.size] as? NSNumber)?.uint64Value ?? 0
+    }
+
+    /// Last few lines of `path` since `offset`, for error alerts.
+    ///
+    /// Only what a start appended is useful: the file is never truncated
+    /// between sessions, so the plain tail showed whatever the previous
+    /// session left behind — a "Listening on 127.0.0.1:11434" line under a
+    /// "did not become ready" error. A file shorter than the offset was rotated
+    /// while the server started, and then all of it is new.
+    static func logTail(at path: String, since offset: UInt64, lines: Int = 10) -> String {
+        guard let handle = try? FileHandle(forReadingFrom: URL(fileURLWithPath: path)) else {
             return ""
         }
         defer { try? handle.close() }
         let end = (try? handle.seekToEnd()) ?? 0
+        let start: UInt64 = end < offset ? 0 : offset
         let window: UInt64 = 4096
-        try? handle.seek(toOffset: end > window ? end - window : 0)
+        let from = max(start, end > window ? end - window : 0)
+        try? handle.seek(toOffset: from)
         let data = (try? handle.readToEnd()) ?? Data()
-        let text = String(data: data, encoding: .utf8) ?? ""
+        let text = String(decoding: data, as: UTF8.self)
         return text.split(separator: "\n").suffix(lines).joined(separator: "\n")
     }
 
