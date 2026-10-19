@@ -20,11 +20,14 @@ public enum OllamaError: LocalizedError {
 }
 
 /// Owns the lifecycle of the local Ollama server and talks to its HTTP API.
+///
+/// `start()` and `stop()` are serialized through a gate, so callers on
+/// different threads never spawn or kill servers concurrently.
 public final class OllamaService {
     private(set) var serverProcess: Process?
-    private var isStarting = false
 
     private let api: OllamaAPI
+    private let lifecycle = LifecycleGate()
 
     /// How long `start()` waits for the API to answer, in seconds.
     static let startupTimeout: TimeInterval = 8
@@ -118,42 +121,44 @@ public final class OllamaService {
     /// Throws `OllamaError.launchFailed` with the tail of the server log when
     /// the process dies early or never becomes ready, so callers can show a
     /// meaningful alert instead of silently doing nothing.
+    ///
+    /// Serialized against `stop()`: a second call while the server is starting
+    /// only waits for the gate and then sees the server running.
     public func start() throws {
-        guard !isStarting, serverProcess?.isRunning != true, !isServerRunning else { return }
-        guard let binary = binaryPath else { throw OllamaError.binaryNotFound }
+        try lifecycle.withLock {
+            guard serverProcess?.isRunning != true, !isServerRunning else { return }
+            guard let binary = binaryPath else { throw OllamaError.binaryNotFound }
 
-        isStarting = true
-        defer { isStarting = false }
+            let process = Process()
+            process.executableURL = URL(fileURLWithPath: binary)
+            process.arguments = ["serve"]
 
-        let process = Process()
-        process.executableURL = URL(fileURLWithPath: binary)
-        process.arguments = ["serve"]
+            var environment = ProcessInfo.processInfo.environment
+            environment["OLLAMA_HOST"] = Config.settings.listenHost
+            environment["OLLAMA_KEEP_ALIVE"] = Config.keepAlive
+            environment["OLLAMA_CONTEXT_LENGTH"] = Config.contextLength
+            environment["OLLAMA_MAX_LOADED_MODELS"] = Config.maxLoadedModels
+            environment["OLLAMA_FLASH_ATTENTION"] = Config.flashAttention
+            environment["OLLAMA_KV_CACHE_TYPE"] = Config.kvCacheType
+            process.environment = environment
+            attachLog(to: process)
 
-        var environment = ProcessInfo.processInfo.environment
-        environment["OLLAMA_HOST"] = Config.settings.listenHost
-        environment["OLLAMA_KEEP_ALIVE"] = Config.keepAlive
-        environment["OLLAMA_CONTEXT_LENGTH"] = Config.contextLength
-        environment["OLLAMA_MAX_LOADED_MODELS"] = Config.maxLoadedModels
-        environment["OLLAMA_FLASH_ATTENTION"] = Config.flashAttention
-        environment["OLLAMA_KV_CACHE_TYPE"] = Config.kvCacheType
-        process.environment = environment
-        attachLog(to: process)
+            do {
+                try process.run()
+            } catch {
+                throw OllamaError.launchFailed(error.localizedDescription)
+            }
+            serverProcess = process
 
-        do {
-            try process.run()
-        } catch {
-            throw OllamaError.launchFailed(error.localizedDescription)
+            if waitUntilReady(process: process, timeout: Self.startupTimeout) { return }
+
+            if process.isRunning {
+                process.terminate()
+                _ = waitForProcessExit(process, timeout: 2)
+            }
+            serverProcess = nil
+            throw OllamaError.launchFailed(startFailureReason())
         }
-        serverProcess = process
-
-        if waitUntilReady(process: process, timeout: Self.startupTimeout) { return }
-
-        if process.isRunning {
-            process.terminate()
-            _ = waitForProcessExit(process, timeout: 2)
-        }
-        serverProcess = nil
-        throw OllamaError.launchFailed(startFailureReason())
     }
 
     /// Unloads every model and stops the server, freeing its memory.
@@ -165,23 +170,25 @@ public final class OllamaService {
     /// - Returns: `true` when nothing ollama-related is left running.
     @discardableResult
     public func stop() -> Bool {
-        if let binary = binaryPath, isServerRunning {
-            for model in loadedModelNames {
-                Shell.run(binary, ["stop", model], environment: cliEnvironment)
+        lifecycle.withLock {
+            if let binary = binaryPath, isServerRunning {
+                for model in loadedModelNames {
+                    Shell.run(binary, ["stop", model], environment: cliEnvironment)
+                }
             }
-        }
-        if let process = serverProcess, process.isRunning {
-            process.terminate()
-        }
-        OllamaProcesses.signalAll(SIGTERM)
-        if waitForShutdown(timeout: Self.stopGracePeriod) {
+            if let process = serverProcess, process.isRunning {
+                process.terminate()
+            }
+            OllamaProcesses.signalAll(SIGTERM)
+            if waitForShutdown(timeout: Self.stopGracePeriod) {
+                serverProcess = nil
+                return true
+            }
+            OllamaProcesses.signalAll(SIGKILL)
+            let stopped = waitForShutdown(timeout: 2)
             serverProcess = nil
-            return true
+            return stopped
         }
-        OllamaProcesses.signalAll(SIGKILL)
-        let stopped = waitForShutdown(timeout: 2)
-        serverProcess = nil
-        return stopped
     }
 
     /// Preloads the first installed model so the next request is instant.
