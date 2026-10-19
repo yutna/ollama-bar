@@ -51,8 +51,56 @@ stop_fake() {
 }
 trap stop_fake EXIT
 
+# Runs "$@" with a 10s watchdog so a regression that turns an option into a
+# running GUI app fails the smoke test instead of hanging until job timeout.
+# Sets CLI_RC and CLI_OUTPUT; exits on a watchdog kill.
+run_cli() {
+    cli_out="${TMPDIR:-/tmp}/ollamabar-cli-$$.out"
+    "$@" >"$cli_out" 2>&1 &
+    cli_pid=$!
+    ( sleep 10; kill -9 "$cli_pid" 2>/dev/null ) &
+    cli_watchdog=$!
+    set +e
+    wait "$cli_pid"
+    CLI_RC=$?
+    set -e
+    kill "$cli_watchdog" 2>/dev/null || true
+    wait "$cli_watchdog" 2>/dev/null || true
+    CLI_OUTPUT=$(cat "$cli_out")
+    rm -f "$cli_out"
+    if [ "$CLI_RC" -eq 137 ]; then
+        echo "FAIL: '$*' did not exit within 10s"
+        exit 1
+    fi
+}
+
 echo "== --help prints usage =="
 "$BIN" --help >/dev/null
+
+echo "== --version prints the bundle version =="
+run_cli "$BIN" --version
+echo "version: $CLI_OUTPUT"
+case "$CLI_OUTPUT" in
+    "OllamaBar "*) ;;
+    *)
+        echo "FAIL: unexpected --version output '$CLI_OUTPUT'"
+        exit 1
+        ;;
+esac
+
+echo "== unknown option fails instead of launching the app =="
+run_cli "$BIN" --bogus
+if [ "$CLI_RC" -eq 0 ]; then
+    echo "FAIL: --bogus exited 0"
+    exit 1
+fi
+case "$CLI_OUTPUT" in
+    *"unknown option '--bogus'"*) ;;
+    *)
+        echo "FAIL: --bogus did not report the unknown option"
+        exit 1
+        ;;
+esac
 
 PORT="$BASE_PORT"
 echo "== healthy fake server =="

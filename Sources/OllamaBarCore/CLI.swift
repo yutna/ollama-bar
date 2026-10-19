@@ -9,7 +9,24 @@ import Foundation
 /// The CLI intentionally stays in English: it targets scripts and CI,
 /// not the localized UI.
 public enum CLI {
+    /// Options the CLI owns. `main.swift` uses this list to tell CLI mode
+    /// apart from a normal app launch, and mistyped options are rejected
+    /// instead of silently starting the menu bar app.
+    public static let flags: Set<String> = [
+        "--start", "--stop", "--status", "--warm", "--help", "-h", "--version", "-v",
+    ]
+
     public static func run(_ arguments: [String]) -> Never {
+        let unknown = arguments.filter { $0.hasPrefix("--") && !flags.contains($0) }
+        if let option = unknown.first {
+            fail("unknown option '\(option)'")
+        }
+
+        if arguments.contains("--version") || arguments.contains("-v") {
+            print("OllamaBar \(version(from: Bundle.main.infoDictionary))")
+            exit(0)
+        }
+
         let service = OllamaService()
 
         if arguments.contains("--start") {
@@ -48,6 +65,18 @@ public enum CLI {
         exit(0)
     }
 
+    /// App version, read from the bundle so it always matches `Info.plist`.
+    /// Falls back to `unknown` when the binary runs outside an app bundle.
+    static func version(from infoDictionary: [String: Any]?) -> String {
+        (infoDictionary?["CFBundleShortVersionString"] as? String) ?? "unknown"
+    }
+
+    /// Prints an error plus the usage to standard error and exits with 2.
+    private static func fail(_ message: String) -> Never {
+        FileHandle.standardError.write(Data(("error: " + message + "\n\n" + usage + "\n").utf8))
+        exit(2)
+    }
+
     private static let usage = """
         OllamaBar — a menu bar toggle for a local Ollama server
 
@@ -58,5 +87,6 @@ public enum CLI {
           OllamaBar --status  Print: stopped | running | running model-loaded
           OllamaBar --warm    Preload the first installed model
           OllamaBar --help    Show this help
+          OllamaBar --version Print the app version
         """
 }
