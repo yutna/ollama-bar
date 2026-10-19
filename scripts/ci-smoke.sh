@@ -1,5 +1,5 @@
 #!/bin/sh
-# Integration smoke test for the OllamaBar CLI against scripts/fake_ollama.py.
+# Integration smoke test for the OllamaBar CLI against scripts/fake_ollama.pl.
 #
 # Usage: scripts/ci-smoke.sh
 #   BIN  path to the built binary (default: build/OllamaBar.app/Contents/MacOS/OllamaBar)
@@ -8,6 +8,8 @@ set -eu
 
 BIN="${BIN:-build/OllamaBar.app/Contents/MacOS/OllamaBar}"
 BASE_PORT="${PORT:-18134}"
+PERL="${PERL:-/usr/bin/perl}"
+[ -x "$PERL" ] || PERL=perl
 FAKE_PID=""
 FAKE_LOG=""
 
@@ -15,7 +17,7 @@ start_fake() {
     port="$1"
     mode="$2"
     FAKE_LOG="${TMPDIR:-/tmp}/ollamabar-fake-${port}.log"
-    python3 -u scripts/fake_ollama.py "$port" "$mode" >"$FAKE_LOG" 2>&1 &
+    "$PERL" scripts/fake_ollama.pl "$port" "$mode" >"$FAKE_LOG" 2>&1 &
     FAKE_PID=$!
     n=0
     while [ "$n" -lt 20 ]; do
