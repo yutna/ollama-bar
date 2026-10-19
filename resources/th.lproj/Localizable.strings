@@ -63,3 +63,12 @@
 
 /* Alert body when warm-up fails. %@ is the model name */
 "alert.warmFailed.body" = "โหลด %@ ล่วงหน้าไม่สำเร็จ ดูรายละเอียดได้ที่ ~/.ollama/logs/server.log";
+
+/* Error: the ollama executable is missing */
+"error.binaryNotFound" = "ไม่พบโปรแกรม `ollama`";
+
+/* Error: the server did not become ready in time. %d is a number of seconds */
+"error.launchTimeout" = "เซิร์ฟเวอร์ไม่พร้อมใช้งานภายใน %d วินาที";
+
+/* Error: readiness timeout with the tail of server.log. %d seconds, %@ log */
+"error.launchTimeoutWithLog" = "เซิร์ฟเวอร์ไม่พร้อมใช้งานภายใน %d วินาที\n\n%@";

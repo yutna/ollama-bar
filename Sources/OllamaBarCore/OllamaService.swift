@@ -12,7 +12,7 @@ public enum OllamaError: LocalizedError {
     public var errorDescription: String? {
         switch self {
         case .binaryNotFound:
-            return "The `ollama` executable could not be found."
+            return L10n.errorBinaryNotFound
         case .launchFailed(let reason):
             return reason
         }
@@ -234,9 +234,9 @@ public final class OllamaService {
         let seconds = Int(Self.startupTimeout)
         let tail = logTail()
         guard !tail.isEmpty else {
-            return "The server did not become ready within \(seconds)s."
+            return L10n.errorLaunchTimeout(seconds)
         }
-        return "The server did not become ready within \(seconds)s.\n\n\(tail)"
+        return L10n.errorLaunchTimeoutWithLog(seconds, tail)
     }
 
     /// Last few lines of `server.log`, for error alerts.

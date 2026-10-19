@@ -39,6 +39,7 @@ test:
 
 lint:
 	$(FORMAT) lint --configuration .swift-format --recursive Sources
+	perl scripts/check-strings.pl resources/en.lproj/Localizable.strings resources/th.lproj/Localizable.strings
 
 format:
 	$(FORMAT) format --in-place --configuration .swift-format --recursive Sources
