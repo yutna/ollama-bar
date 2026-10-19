@@ -25,6 +25,21 @@ release but is only the local build sitting next to the installed app.
   *System Settings → Siri & Spotlight → Spotlight Privacy*.
 - CI and release builds are unaffected; this only affects interactive machines.
 
+## The server log is written by a separate `--log-pump` process
+
+`OllamaService` gives `ollama serve` a pipe and runs the same binary with
+`--log-pump <path>` to drain it into `~/.ollama/logs/server.log`. The reader is
+a separate process on purpose: `--start` exits right after spawning the server
+and the GUI app can be replaced by a dev build, and an in-process reader would
+close the pipe with it — the still-running server then gets SIGPIPE on its next
+log write and dies (verified against real Ollama; the smoke test cannot catch
+this because the Perl fake server never writes to stdout).
+
+Rotating the log while the server runs is only possible because the app's side
+of the pipe owns the file handle. Do not "simplify" this back to handing the
+child a file handle: rotation would then be limited to start, and a long
+session could grow the log without bound.
+
 ## The fake Ollama server is Perl on purpose
 
 `scripts/fake_ollama.pl` is the test double used by `scripts/ci-smoke.sh`. It is

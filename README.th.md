@@ -108,7 +108,8 @@ OLLAMABAR_CONTEXT_LENGTH=32768 ./build/OllamaBar.app/Contents/MacOS/OllamaBar --
 
 ค่าที่ override ได้: `OLLAMABAR_PORT`, `OLLAMABAR_KEEP_ALIVE`,
 `OLLAMABAR_CONTEXT_LENGTH`, `OLLAMABAR_MAX_LOADED_MODELS`,
-`OLLAMABAR_FLASH_ATTENTION`, `OLLAMABAR_KV_CACHE_TYPE`
+`OLLAMABAR_FLASH_ATTENTION`, `OLLAMABAR_KV_CACHE_TYPE`,
+`OLLAMABAR_LOG_MAX_BYTES`
 
 ทุกค่าจะถูกตรวจสอบก่อนใช้: พิมพ์ผิด พอร์ตเกินช่วง หรือ duration ที่ไม่ถูกต้อง
 จะ fallback กลับไปใช้ค่าเริ่มต้น แทนที่จะชี้แอปไปยัง server ที่ไม่มีอยู่จริง
@@ -137,7 +138,8 @@ CLI จะตอบเป็นภาษาอังกฤษเสมอ เพ
 
 - **เริ่ม** spawn `ollama serve` เป็น child process พร้อม environment ด้านบน
   (รวม `OLLAMA_HOST=127.0.0.1:<port>`) และเขียน log ไปที่ `~/.ollama/logs/server.log`
-  โดย log จะถูกหมุนเมื่อเกิน 10 MB
+  โดยหมุน log ระหว่างที่ server ทำงานเมื่อไฟล์เกิน `OLLAMABAR_LOG_MAX_BYTES`
+  (ค่าเริ่มต้น 10 MB) และเก็บไฟล์ก่อนหน้าไว้เป็น `server.log.1`
 - **หยุด** สั่ง Ollama unload โมเดลที่โหลดอยู่ทีละตัว แล้วปิด server
   (รวมถึง `ollama serve` / `ollama runner` ที่ผู้ใช้เป็นเจ้าของทุกตัว เพื่อให้ได้ RAM คืนแน่นอน)
   และจะส่ง SIGKILL ต่อหาก process ไม่ยอมปิด

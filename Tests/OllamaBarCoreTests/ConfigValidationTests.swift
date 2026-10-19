@@ -67,6 +67,7 @@ final class ConfigValidationTests: XCTestCase {
             "OLLAMABAR_MAX_LOADED_MODELS": "2",
             "OLLAMABAR_FLASH_ATTENTION": "0",
             "OLLAMABAR_KV_CACHE_TYPE": "q4_0",
+            "OLLAMABAR_LOG_MAX_BYTES": "2048",
         ])
         XCTAssertEqual(settings.port, "12345")
         XCTAssertEqual(settings.keepAlive, "30m")
@@ -74,6 +75,7 @@ final class ConfigValidationTests: XCTestCase {
         XCTAssertEqual(settings.maxLoadedModels, "2")
         XCTAssertEqual(settings.flashAttention, "0")
         XCTAssertEqual(settings.kvCacheType, "q4_0")
+        XCTAssertEqual(settings.logMaxBytes, "2048")
         XCTAssertEqual(settings.listenHost, "127.0.0.1:12345")
         XCTAssertEqual(settings.apiBase, "http://127.0.0.1:12345")
     }
@@ -86,6 +88,7 @@ final class ConfigValidationTests: XCTestCase {
             "OLLAMABAR_MAX_LOADED_MODELS": "0",
             "OLLAMABAR_FLASH_ATTENTION": "yes",
             "OLLAMABAR_KV_CACHE_TYPE": "F16",
+            "OLLAMABAR_LOG_MAX_BYTES": "0",
         ])
         XCTAssertEqual(settings, Config.defaults)
     }

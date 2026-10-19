@@ -17,6 +17,16 @@ public enum CLI {
     ]
 
     public static func run(_ arguments: [String]) -> Never {
+        // Internal mode: `OllamaService` runs the app as a log pump. It stays
+        // out of `flags` so the user-facing option list and the usage text
+        // stay in sync, and is handled before the unknown-option check.
+        if let index = arguments.firstIndex(of: "--log-pump") {
+            let path =
+                arguments.indices.contains(index + 1)
+                ? arguments[index + 1] : OllamaService.logFilePath
+            LogPump.run(path: path)
+        }
+
         let unknown = arguments.filter { $0.hasPrefix("--") && !flags.contains($0) }
         if let option = unknown.first {
             fail("unknown option '\(option)'")

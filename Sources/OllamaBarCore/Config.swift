@@ -26,6 +26,8 @@ enum Config {
         var flashAttention: String
         /// K/V cache quantization type for the llama.cpp backend.
         var kvCacheType: String
+        /// Largest `server.log` before it is rotated, in bytes.
+        var logMaxBytes: String
 
         /// Base URL of the local API.
         var apiBase: String { "http://127.0.0.1:\(port)" }
@@ -41,7 +43,8 @@ enum Config {
         contextLength: "65536",
         maxLoadedModels: "1",
         flashAttention: "1",
-        kvCacheType: "q8_0"
+        kvCacheType: "q8_0",
+        logMaxBytes: String(RotatingLogWriter.defaultMaxBytes)
     )
 
     /// The configuration in effect for this process.
@@ -54,6 +57,11 @@ enum Config {
     static var flashAttention: String { settings.flashAttention }
     static var kvCacheType: String { settings.kvCacheType }
     static var apiBase: String { settings.apiBase }
+
+    /// Log cap in bytes, used by the log pump.
+    static var logMaxBytes: UInt64 {
+        UInt64(settings.logMaxBytes) ?? RotatingLogWriter.defaultMaxBytes
+    }
 
     /// Validates every `OLLAMABAR_*` override, falling back to defaults.
     static func resolve(env environment: [String: String]) -> Settings {
@@ -71,7 +79,10 @@ enum Config {
                 ?? defaults.flashAttention,
             kvCacheType: validatedKvCacheType(
                 env("OLLAMABAR_KV_CACHE_TYPE", defaults.kvCacheType, in: environment))
-                ?? defaults.kvCacheType
+                ?? defaults.kvCacheType,
+            logMaxBytes: validatedPositiveInt(
+                env("OLLAMABAR_LOG_MAX_BYTES", defaults.logMaxBytes, in: environment))
+                ?? defaults.logMaxBytes
         )
     }
 
