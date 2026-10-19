@@ -40,6 +40,16 @@ public enum L10n {
         String(localized: "menu.login", defaultValue: "Show icon at login")
     }
 
+    public static var menuLoginPending: String {
+        String(
+            localized: "menu.login.pending",
+            defaultValue: "Login item needs approval — open System Settings")
+    }
+
+    public static var accessibilityIcon: String {
+        String(localized: "accessibility.icon", defaultValue: "OllamaBar")
+    }
+
     public static var menuQuit: String {
         String(localized: "menu.quit", defaultValue: "Quit (also stops Ollama)")
     }

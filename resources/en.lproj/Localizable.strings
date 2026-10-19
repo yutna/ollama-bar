@@ -19,6 +19,12 @@
 /* Menu item that toggles the login item */
 "menu.login" = "Show icon at login";
 
+/* Menu item shown while the login item awaits approval in System Settings */
+"menu.login.pending" = "Login item needs approval — open System Settings";
+
+/* Accessibility label of the menu bar icon */
+"accessibility.icon" = "OllamaBar";
+
 /* Menu item that quits the app */
 "menu.quit" = "Quit (also stops Ollama)";
 

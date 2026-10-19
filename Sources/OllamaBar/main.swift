@@ -21,10 +21,12 @@ app.delegate = delegate
 
 // A `kill` or logout does not run `applicationWillTerminate`, so trap the
 // common termination signals and stop the managed server before exiting.
+// The sources run off the main queue on purpose: during menu tracking the
+// main queue can be stalled, and termination must not wait for it.
 var signalSources: [DispatchSourceSignal] = []
 for signalNumber in [SIGTERM, SIGINT, SIGHUP] {
     signal(signalNumber, SIG_IGN)
-    let source = DispatchSource.makeSignalSource(signal: signalNumber, queue: .main)
+    let source = DispatchSource.makeSignalSource(signal: signalNumber, queue: .global(qos: .userInitiated))
     source.setEventHandler { delegate.handleTerminationSignal() }
     source.resume()
     signalSources.append(source)

@@ -8,9 +8,17 @@ import ServiceManagement
 
 /// Menu bar UI and user actions.
 final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
+    /// Cached server state, refreshed off the main thread.
+    private struct ServerState: Equatable {
+        var isRunning = false
+        var loadedModels: [String] = []
+    }
+
     private let service = OllamaService()
     private var statusItem: NSStatusItem?
     private var refreshTimer: Timer?
+    private var state = ServerState()
+    private var isRefreshing = false
 
     // MARK: - Lifecycle
 
@@ -21,10 +29,15 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         item.menu = menu
         statusItem = item
 
+        if let button = item.button {
+            button.title = "🦙"
+            button.setAccessibilityLabel(L10n.accessibilityIcon)
+        }
         refreshIcon()
+        refreshState()
 
         let timer = Timer(timeInterval: 3, repeats: true) { [weak self] _ in
-            self?.refreshIcon()
+            self?.refreshState()
         }
         RunLoop.main.add(timer, forMode: .common)
         refreshTimer = timer
@@ -59,17 +72,34 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
 
     func menuWillOpen(_ menu: NSMenu) {
         rebuild(menu)
+        refreshState()
+    }
+
+    // MARK: - State
+
+    /// Refreshes the cached server state without blocking the main thread.
+    private func refreshState() {
+        guard !isRefreshing else { return }
+        isRefreshing = true
+        Task.detached { [weak self] in
+            guard let self else { return }
+            let status = await self.service.status()
+            await MainActor.run {
+                self.isRefreshing = false
+                self.state = ServerState(isRunning: status.isRunning, loadedModels: status.loadedModels)
+                self.refreshIcon()
+            }
+        }
     }
 
     // MARK: - Icon state
 
     private func refreshIcon() {
         guard let button = statusItem?.button else { return }
-        let running = service.isServerRunning
-        button.title = "🦙"
+        let running = state.isRunning
         button.alphaValue = running ? 1.0 : 0.35
 
-        if running && !service.loadedModelNames.isEmpty {
+        if running && !state.loadedModels.isEmpty {
             button.toolTip = L10n.tooltipRunningLoaded
         } else if running {
             button.toolTip = L10n.tooltipRunning
@@ -83,8 +113,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
     private func rebuild(_ menu: NSMenu) {
         menu.removeAllItems()
 
-        let running = service.isServerRunning
-        let models = running ? service.loadedModelNames : []
+        let running = state.isRunning
+        let models = state.loadedModels
 
         let header = NSMenuItem(title: statusTitle(running: running, models: models), action: nil, keyEquivalent: "")
         header.isEnabled = false
@@ -101,8 +131,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         }
         menu.addItem(.separator())
 
-        let login = addItem(to: menu, title: L10n.menuLogin, action: #selector(toggleLogin))
-        login.state = SMAppService.mainApp.status == .enabled ? .on : .off
+        let loginStatus = SMAppService.mainApp.status
+        let loginTitle = loginStatus == .requiresApproval ? L10n.menuLoginPending : L10n.menuLogin
+        let login = addItem(to: menu, title: loginTitle, action: #selector(toggleLogin))
+        login.state = loginStatus == .enabled ? .on : .off
         menu.addItem(.separator())
 
         addItem(to: menu, title: L10n.menuQuit, action: #selector(quitAction), keyEquivalent: "q")
@@ -130,38 +162,50 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
     // MARK: - Actions
 
     @objc private func startAction() {
-        do {
-            try service.start()
-            refreshIcon()
-        } catch OllamaError.binaryNotFound {
-            alert(title: L10n.alertNotFoundTitle, body: L10n.alertNotFoundBody)
-        } catch {
-            alert(title: L10n.alertStartFailedTitle, body: error.localizedDescription)
+        Task.detached { [weak self] in
+            guard let self else { return }
+            do {
+                try self.service.start()
+                await MainActor.run { self.refreshState() }
+            } catch OllamaError.binaryNotFound {
+                await MainActor.run { self.alert(title: L10n.alertNotFoundTitle, body: L10n.alertNotFoundBody) }
+            } catch {
+                await MainActor.run {
+                    self.alert(title: L10n.alertStartFailedTitle, body: error.localizedDescription)
+                }
+            }
         }
     }
 
     @objc private func stopAction() {
-        service.stop()
-        refreshIcon()
+        Task.detached { [weak self] in
+            guard let self else { return }
+            self.service.stop()
+            await MainActor.run { self.refreshState() }
+        }
     }
 
     @objc private func warmAction() {
-        guard service.firstInstalledModel != nil else {
-            alert(title: L10n.alertNoModelsTitle, body: L10n.alertNoModelsBody)
-            return
-        }
-        DispatchQueue.global().async { [weak self] in
-            self?.service.warmUp()
-            DispatchQueue.main.async { self?.refreshIcon() }
+        Task.detached { [weak self] in
+            guard let self else { return }
+            guard self.service.firstInstalledModel != nil else {
+                await MainActor.run { self.alert(title: L10n.alertNoModelsTitle, body: L10n.alertNoModelsBody) }
+                return
+            }
+            self.service.warmUp()
+            await MainActor.run { self.refreshState() }
         }
     }
 
     @objc private func toggleLogin() {
         let loginItem = SMAppService.mainApp
         do {
-            if loginItem.status == .enabled {
+            switch loginItem.status {
+            case .enabled:
                 try loginItem.unregister()
-            } else {
+            case .requiresApproval:
+                SMAppService.openSystemSettingsLoginItems()
+            default:
                 try loginItem.register()
             }
         } catch {
@@ -176,6 +220,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
     }
 
     private func alert(title: String, body: String) {
+        NSApp.activate(ignoringOtherApps: true)
         let alert = NSAlert()
         alert.messageText = title
         alert.informativeText = body
