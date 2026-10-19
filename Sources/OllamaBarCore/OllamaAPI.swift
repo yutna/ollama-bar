@@ -27,6 +27,9 @@ struct OllamaAPI {
         let name: String
         /// Model family, e.g. `llama`, `qwen2`, or `bert` for embedding models.
         let family: String?
+        /// Capabilities reported by the server, e.g. `completion`, `embedding`,
+        /// `vision`, `tools`. Empty for servers that predate the field.
+        var capabilities: [String] = []
     }
 
     let baseURL: URL
@@ -65,7 +68,8 @@ struct OllamaAPI {
         return models.compactMap { entry in
             guard let name = (entry["model"] as? String) ?? (entry["name"] as? String) else { return nil }
             let family = (entry["details"] as? [String: Any])?["family"] as? String
-            return InstalledModel(name: name, family: family)
+            let capabilities = entry["capabilities"] as? [String] ?? []
+            return InstalledModel(name: name, family: family, capabilities: capabilities)
         }
     }
 

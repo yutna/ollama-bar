@@ -88,7 +88,15 @@ public final class OllamaService {
 
     /// Heuristic: embedding models are named `*embed*` or belong to the
     /// `bert` family (`bert`, `nomic-bert`, ...).
+    ///
+    /// Models report their `capabilities` on current servers, so that wins:
+    /// embedding-only means the server listed `embedding` without also listing
+    /// `completion`.
     static func isEmbeddingModel(_ model: OllamaAPI.InstalledModel) -> Bool {
+        if !model.capabilities.isEmpty {
+            return model.capabilities.contains("embedding")
+                && !model.capabilities.contains("completion")
+        }
         if model.name.lowercased().contains("embed") { return true }
         if let family = model.family?.lowercased(), family.contains("bert") { return true }
         return false
