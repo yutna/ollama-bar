@@ -52,6 +52,12 @@
 /* Alert title when the server fails to start */
 "alert.startFailed.title" = "无法启动 Ollama";
 
+/* Alert title when the server cannot be stopped */
+"alert.stopFailed.title" = "无法停止 Ollama";
+
+/* Alert body when the server cannot be stopped */
+"alert.stopFailed.body" = "仍有 ollama 进程在运行。请重试，或通过 `pgrep -fl ollama` 检查。";
+
 /* Alert title when warm-up is requested but no model is installed */
 "alert.noModels.title" = "未安装任何模型";
 

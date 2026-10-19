@@ -52,6 +52,12 @@
 /* Alert title when the server fails to start */
 "alert.startFailed.title" = "เริ่ม Ollama ไม่สำเร็จ";
 
+/* Alert title when the server cannot be stopped */
+"alert.stopFailed.title" = "หยุด Ollama ไม่สำเร็จ";
+
+/* Alert body when the server cannot be stopped */
+"alert.stopFailed.body" = "ยังมี process ของ ollama ทำงานอยู่ ลองอีกครั้ง หรือตรวจสอบด้วย `pgrep -fl ollama`";
+
 /* Alert title when warm-up is requested but no model is installed */
 "alert.noModels.title" = "ยังไม่มีโมเดลติดตั้งอยู่";
 

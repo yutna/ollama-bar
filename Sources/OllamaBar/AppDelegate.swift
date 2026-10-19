@@ -180,8 +180,13 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
     @objc private func stopAction() {
         Task.detached { [weak self] in
             guard let self else { return }
-            self.service.stop()
-            await MainActor.run { self.refreshState() }
+            let stopped = self.service.stop()
+            await MainActor.run {
+                if !stopped {
+                    self.alert(title: L10n.alertStopFailedTitle, body: L10n.alertStopFailedBody)
+                }
+                self.refreshState()
+            }
         }
     }
 

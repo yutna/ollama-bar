@@ -52,6 +52,12 @@
 /* Alert title when the server fails to start */
 "alert.startFailed.title" = "Ollama를 시작할 수 없습니다";
 
+/* Alert title when the server cannot be stopped */
+"alert.stopFailed.title" = "Ollama를 중지할 수 없습니다";
+
+/* Alert body when the server cannot be stopped */
+"alert.stopFailed.body" = "ollama 프로세스가 아직 실행 중입니다. 다시 시도하거나 `pgrep -fl ollama`로 확인하세요.";
+
 /* Alert title when warm-up is requested but no model is installed */
 "alert.noModels.title" = "설치된 모델이 없습니다";
 

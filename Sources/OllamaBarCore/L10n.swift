@@ -90,6 +90,17 @@ public enum L10n {
         String(localized: "alert.startFailed.title", defaultValue: "Could not start Ollama")
     }
 
+    public static var alertStopFailedTitle: String {
+        String(localized: "alert.stopFailed.title", defaultValue: "Could not stop Ollama")
+    }
+
+    public static var alertStopFailedBody: String {
+        String(
+            localized: "alert.stopFailed.body",
+            defaultValue:
+                "Some ollama processes are still running. Try again, or check with `pgrep -fl ollama`.")
+    }
+
     public static var alertNoModelsTitle: String {
         String(localized: "alert.noModels.title", defaultValue: "No models installed")
     }
