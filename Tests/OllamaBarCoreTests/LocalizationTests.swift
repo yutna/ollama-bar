@@ -16,4 +16,9 @@ final class LocalizationTests: XCTestCase {
     func testBinaryNotFoundMessageIsNotEmpty() {
         XCTAssertFalse(L10n.errorBinaryNotFound.isEmpty)
     }
+
+    func testStopFailedMessagesAreNotEmpty() {
+        XCTAssertFalse(L10n.alertStopFailedTitle.isEmpty)
+        XCTAssertTrue(L10n.alertStopFailedBody.contains("ollama"))
+    }
 }
