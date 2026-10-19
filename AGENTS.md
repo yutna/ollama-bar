@@ -25,6 +25,25 @@ release but is only the local build sitting next to the installed app.
   *System Settings → Siri & Spotlight → Spotlight Privacy*.
 - CI and release builds are unaffected; this only affects interactive machines.
 
+### Deleting the dev build leaves a LaunchServices ghost
+
+Removing `build/OllamaBar.app` does not remove its registration: LaunchServices
+keeps the deleted path, and Spotlight/Launchpad can then show a second
+"OllamaBar" whose icon carries a *prohibited* badge. The Spotlight index itself
+is clean — `mdfind` lists only the installed app — so the fix is to unregister
+the ghost explicitly:
+
+```sh
+LSR=/System/Library/Frameworks/CoreServices.framework/Frameworks/LaunchServices.framework/Support/lsregister
+"$LSR" -u "$PWD/build/OllamaBar.app"
+"$LSR" -dump | grep -E "^path:.*OllamaBar\.app"   # only the installed copy
+```
+
+If a ghost survives that, `"$LSR" -kill -r -domain local -domain user -domain
+system` rebuilds the database. When a machine only needs the current release,
+unzip the release artifact into place instead of running `make install`: no dev
+bundle is created, and nothing new gets registered.
+
 ## The server log is written by a separate `--log-pump` process
 
 `OllamaService` gives `ollama serve` a pipe and runs the same binary with
