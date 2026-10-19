@@ -95,12 +95,16 @@ final class RotatingLogWriter: @unchecked Sendable {
 
     // MARK: - Files
 
-    private static func openForAppending(_ path: String) -> FileHandle? {
+    /// Opens `path` for appending, creating the parent directory and the file
+    /// when needed.
+    ///
+    /// Shared with the no-pump fallback in `OllamaService`, which hands the
+    /// descriptor to the server process: `O_APPEND` keeps concurrent writers
+    /// (several servers share one log) from overwriting each other's offsets.
+    static func openForAppending(_ path: String) -> FileHandle? {
         let directory = (path as NSString).deletingLastPathComponent
         try? FileManager.default.createDirectory(
             atPath: directory, withIntermediateDirectories: true)
-        // O_APPEND keeps concurrent writers (several servers share one log)
-        // from overwriting each other's offsets.
         let descriptor = Darwin.open(path, O_WRONLY | O_CREAT | O_APPEND, 0o644)
         guard descriptor >= 0 else { return nil }
         return FileHandle(fileDescriptor: descriptor, closeOnDealloc: true)
