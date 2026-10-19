@@ -18,7 +18,7 @@ OllamaBar เปลี่ยนให้เหลือแค่คลิกเ�
 | การทำงาน | เกิดอะไรขึ้น |
 | --- | --- |
 | **▶︎ เริ่ม Ollama** | รัน `ollama serve` พร้อมค่าที่ปรับมาแล้ว (ดูด้านล่าง) |
-| **🔥 โหลดโมเดลล่วงหน้า** | โหลดโมเดลแรกที่ติดตั้งไว้ล่วงหน้า คำขอแรกจะไม่มีดีเลย์ |
+| **🔥 โหลดโมเดลล่วงหน้า** | โหลดโมเดลแรกที่ไม่ใช่โมเดล embedding ล่วงหน้า (โมเดล embedding จะถูกข้าม) และปักหมุดด้วย `keep_alive` |
 | **■ หยุด Ollama** | unload ทุกโมเดลและปิด server — คืน RAM ทันที |
 | **ออก** | ปิด Ollama ด้วย (ไม่มีอะไรค้างอยู่ในเบื้องหลัง) |
 
@@ -30,7 +30,7 @@ OllamaBar เปลี่ยนให้เหลือแค่คลิกเ�
 - คลิกเดียวเปิด/ปิด `ollama serve`
 - ปุ่ม **หยุด** คืน memory ทันที ไม่ต้องรอ keep-alive timeout
 - ค่าเริ่มต้นที่เหมาะกับงานจริง: keep-alive `-1`, context 64k, โหลดทีละโมเดล
-- ปุ่ม warm-up โหลดโมเดลก่อนเปิด editor
+- ปุ่ม warm-up โหลดโมเดลก่อนเปิด editor (ข้ามโมเดล embedding ล้วน และปักหมุดโมเดลด้วย `keep_alive`)
 - "แสดงไอคอนตอนล็อกอิน" แบบเลือกได้ (เฉพาะไอคอน — Ollama ยังไม่ทำงานจนกว่าจะกดเริ่ม)
 - โหมด CLI สำหรับ script (`--start`, `--stop`, `--status`, `--warm`, `--help`)
 - UI หลายภาษา (English / ไทย) ตามภาษาของระบบ
@@ -66,7 +66,17 @@ make install              # build แล้วติดตั้งไป /Appli
 
 จากนั้นเปิด **OllamaBar** และมองหาไอคอน 🦙 บนเมนูบาร์
 
-เป้าหมายอื่นๆ ของ make: `build`, `run`, `lint`, `format`, `release-zip`, `uninstall`
+เป้าหมายอื่นๆ ของ make: `build`, `run`, `test`, `lint`, `format`, `release-zip`, `uninstall`
+
+### ถอนการติดตั้ง
+
+ถ้าเปิด **แสดงไอคอนตอนล็อกอิน** ไว้ ให้ปิดจากเมนูก่อน (หรือลบ OllamaBar ใน
+*System Settings → General → Login Items*) — macOS จะเก็บ login item ไว้แม้ลบแอปแล้ว
+จากนั้นลบแอป:
+
+```sh
+make uninstall            # หรือ: rm -rf /Applications/OllamaBar.app
+```
 
 ## วิธีใช้
 
@@ -100,6 +110,11 @@ OLLAMABAR_CONTEXT_LENGTH=32768 ./build/OllamaBar.app/Contents/MacOS/OllamaBar --
 `OLLAMABAR_CONTEXT_LENGTH`, `OLLAMABAR_MAX_LOADED_MODELS`,
 `OLLAMABAR_FLASH_ATTENTION`, `OLLAMABAR_KV_CACHE_TYPE`
 
+ทุกค่าจะถูกตรวจสอบก่อนใช้: พิมพ์ผิด พอร์ตเกินช่วง หรือ duration ที่ไม่ถูกต้อง
+จะ fallback กลับไปใช้ค่าเริ่มต้น แทนที่จะชี้แอปไปยัง server ที่ไม่มีอยู่จริง
+และ `OLLAMABAR_PORT` จะถูกส่งต่อไปให้ server (`OLLAMA_HOST=127.0.0.1:<port>`)
+รวมถึงคำสั่ง `ollama` ทุกครั้ง ทำให้แอป server และ `ollama stop` ตรงกันเสมอ
+
 ## โหมด CLI
 
 เหมาะกับ script หรือ shell alias:
@@ -112,14 +127,20 @@ $BIN --warm     # โหลดโมเดลแรกที่ติดตั�
 $BIN --stop     # unload โมเดล + ปิด server
 ```
 
+ถ้าคำสั่งไม่สำเร็จ script จะรู้ได้: `--start`, `--stop` และ `--warm` จะ exit
+non-zero เมื่อทำงานไม่สำเร็จ (`--stop` จะพิมพ์ `still-running`, `--warm` จะพิมพ์
+`not-loaded`) ส่วน `--status` จะ exit 0 เสมอและพิมพ์สถานะออกมา
+
 CLI จะตอบเป็นภาษาอังกฤษเสมอ เพื่อให้ script ไม่ต้อง parse ข้อความที่แปลแล้ว
 
 ## กลไกภายใน
 
 - **เริ่ม** spawn `ollama serve` เป็น child process พร้อม environment ด้านบน
-  และเขียน log ไปที่ `~/.ollama/logs/server.log`
+  (รวม `OLLAMA_HOST=127.0.0.1:<port>`) และเขียน log ไปที่ `~/.ollama/logs/server.log`
+  โดย log จะถูกหมุนเมื่อเกิน 10 MB
 - **หยุด** สั่ง Ollama unload โมเดลที่โหลดอยู่ทีละตัว แล้วปิด server
   (รวมถึง `ollama serve` / `ollama runner` ที่ผู้ใช้เป็นเจ้าของทุกตัว เพื่อให้ได้ RAM คืนแน่นอน)
+  และจะส่ง SIGKILL ต่อหาก process ไม่ยอมปิด
 - ตัวแอปถูกเซ็นแบบ ad-hoc ตอน build
 
 ## หลายภาษา

@@ -18,7 +18,7 @@ memory long after you stopped using it. OllamaBar gives you one click instead:
 | Action | What happens |
 | --- | --- |
 | **▶︎ Start Ollama** | runs `ollama serve` with sensible defaults (see below) |
-| **🔥 Warm up model** | preloads your first installed model so the first request is instant |
+| **🔥 Warm up model** | preloads your first generative model (embedding models are skipped) and pins it with `keep_alive` |
 | **■ Stop Ollama** | unloads all models and terminates the server — memory is freed immediately |
 | **Quit** | stops Ollama too (nothing keeps running in the background) |
 
@@ -31,7 +31,7 @@ starts only when you ask it to.
 - One-click start / stop for `ollama serve`
 - **Stop** frees model memory instantly instead of waiting for a keep-alive timeout
 - Optimized defaults out of the box: keep-alive `-1`, 64k context, a single loaded model
-- Warm-up button to preload a model before you open your editor
+- Warm-up button to preload a model before you open your editor (embedding-only models are skipped, and the model is pinned with `keep_alive`)
 - Optional "Show icon at login" (icon only — Ollama itself stays off until you click Start)
 - CLI mode for scripts (`--start`, `--stop`, `--status`, `--warm`, `--help`)
 - Localized UI (English / ไทย) — follows your system language
@@ -67,8 +67,18 @@ make install              # build and install to /Applications
 
 Then launch **OllamaBar** and look for the 🦙 icon in the menu bar.
 
-Other targets: `make build` (into `build/`), `make run`, `make lint`,
+Other targets: `make build` (into `build/`), `make run`, `make test`, `make lint`,
 `make format`, `make release-zip`, `make uninstall`.
+
+### Uninstall
+
+If you turned on **Show icon at login**, switch it off from the menu first (or
+remove OllamaBar in *System Settings → General → Login Items*) — macOS keeps
+the login item registered even after the app is deleted. Then remove the app:
+
+```sh
+make uninstall            # or: rm -rf /Applications/OllamaBar.app
+```
 
 ## Usage
 
@@ -102,6 +112,12 @@ Supported overrides: `OLLAMABAR_PORT`, `OLLAMABAR_KEEP_ALIVE`,
 `OLLAMABAR_CONTEXT_LENGTH`, `OLLAMABAR_MAX_LOADED_MODELS`,
 `OLLAMABAR_FLASH_ATTENTION`, `OLLAMABAR_KV_CACHE_TYPE`.
 
+Every override is validated: a typo, an out-of-range port or an invalid
+duration falls back to the default instead of pointing the app at a server
+that cannot exist. `OLLAMABAR_PORT` is also passed to the server
+(`OLLAMA_HOST=127.0.0.1:<port>`) and to every `ollama` CLI call, so the app,
+the server and `ollama stop` always agree on where the API lives.
+
 ## CLI mode
 
 Handy for scripts or shell aliases:
@@ -114,16 +130,21 @@ $BIN --warm     # preload first installed model
 $BIN --stop     # unload models + stop server
 ```
 
+Failures are visible to scripts: `--start`, `--stop` and `--warm` exit non-zero
+when the action did not succeed (`--stop` prints `still-running`, `--warm`
+prints `not-loaded`). `--status` always exits 0 and prints the state.
+
 The CLI always answers in English so scripts never have to parse translated
 output.
 
 ## How it works
 
 - **Start** spawns `ollama serve` as a child process with the environment
-  above and logs to `~/.ollama/logs/server.log`.
+  above (including `OLLAMA_HOST=127.0.0.1:<port>`) and logs to
+  `~/.ollama/logs/server.log`. The log is rotated when it exceeds 10 MB.
 - **Stop** asks Ollama to unload each loaded model, then terminates the server
   (and any user-owned `ollama serve` / `ollama runner` process, so memory is
-  always freed).
+  always freed), escalating to SIGKILL if a process refuses to exit.
 - The app is ad-hoc code-signed locally when built.
 
 ## Localization
