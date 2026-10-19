@@ -36,21 +36,30 @@ $BIN --warm && $BIN --status    # running model-loaded
 $BIN --stop  && $BIN --status   # stopped
 ```
 
+`--start`, `--stop` and `--warm` exit non-zero when the action did not succeed
+(`--stop` prints `still-running`, `--warm` prints `not-loaded`), so `&&` chains
+and scripts can rely on the exit code. `scripts/ci-smoke.sh` exercises this
+against `scripts/fake_ollama.pl`.
+
 ## Project layout
 
 | Path | Purpose |
 | --- | --- |
 | `Sources/OllamaBar/main.swift` | Entry point: CLI flags vs. menu bar app |
 | `Sources/OllamaBar/AppDelegate.swift` | Menu bar UI, user actions |
-| `Sources/OllamaBarCore/OllamaService.swift` | Server lifecycle + `/api` calls |
-| `Sources/OllamaBarCore/Config.swift` | Env-overridable defaults |
-| `Sources/OllamaBarCore/Shell.swift` | Small `Process` helpers |
+| `Sources/OllamaBarCore/OllamaService.swift` | Server lifecycle (start/stop/warm-up, readiness, log) |
+| `Sources/OllamaBarCore/OllamaAPI.swift` | Validated HTTP client for the local `/api/*` |
+| `Sources/OllamaBarCore/OllamaProcesses.swift` | Finds and signals user-owned ollama processes safely |
+| `Sources/OllamaBarCore/Config.swift` | Env-overridable, validated defaults |
+| `Sources/OllamaBarCore/Shell.swift` | Small `Process` helpers that report real exit codes |
 | `Sources/OllamaBarCore/CLI.swift` | Scriptable `--start/--stop/--status/--warm` |
 | `Sources/OllamaBarCore/L10n.swift` | Typed access to user-facing strings |
 | `Tests/OllamaBarCoreTests/` | Unit tests for `OllamaBarCore` |
-| `scripts/` | CI helpers (fake Ollama API, smoke test) |
+| `scripts/ci-smoke.sh`, `scripts/fake_ollama.pl` | CLI integration smoke test + fake Ollama API (CI runs both) |
+| `scripts/check-strings.pl` | Localization key/format-specifier checker (part of `make lint`) |
+| `scripts/make-icon.sh` | Regenerates `resources/AppIcon.icns` |
 | `resources/*.lproj/` | Localized strings |
-| `resources/Info.plist` | Bundle metadata |
+| `resources/Info.plist`, `resources/AppIcon.icns` | Bundle metadata and icon |
 | `Makefile` | build / install / test / lint / release-zip targets |
 | `Package.swift` | SwiftPM manifest |
 
@@ -91,12 +100,18 @@ screencapture -x -R"x,y,w,h" docs/menu-en.png
 
 ## Release process (maintainers)
 
-```sh
-# 1. bump versions: resources/Info.plist and CHANGELOG.md
-# 2. build the universal zip and checksum
-make release-zip
-# 3. commit, tag, push
-git tag vX.Y.Z && git push origin main vX.Y.Z
-# 4. create the GitHub release (or let the release workflow attach assets)
-gh release create vX.Y.Z build/OllamaBar.app.zip build/OllamaBar.app.zip.sha256 --generate-notes
-```
+1. Bump `CFBundleShortVersionString` (and `CFBundleVersion`) in
+   `resources/Info.plist` and add a matching `## [X.Y.Z] - date` section to
+   `CHANGELOG.md`; merge that through a PR with green CI.
+2. Tag the merge commit and push it:
+
+   ```sh
+   git tag vX.Y.Z && git push origin main vX.Y.Z
+   ```
+
+3. `.github/workflows/release.yml` re-runs lint/build/test, then verifies the
+   tag matches `Info.plist` and the CHANGELOG heading (which is why both must
+   land in the same PR). A mismatch fails the release before anything is
+   published. On success it builds the universal zip and attaches
+   `OllamaBar.app.zip` + `OllamaBar.app.zip.sha256` to the GitHub release
+   (notes are generated from the commits).
