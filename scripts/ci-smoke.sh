@@ -114,8 +114,8 @@ fi
 stop_fake
 
 PORT=$((BASE_PORT + 1))
-echo "== --warm preloads the fake model =="
-start_fake "$PORT" healthy
+echo "== --warm preloads a model on a cold server =="
+start_fake "$PORT" cold
 set +e
 warmed=$(OLLAMABAR_PORT="$PORT" "$BIN" --warm)
 warm_rc=$?
