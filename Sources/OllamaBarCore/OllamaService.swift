@@ -240,11 +240,15 @@ public final class OllamaService {
     /// app, so "stop" always means "nothing is left running". SIGTERM is
     /// followed by SIGKILL when a process ignores the graceful stop.
     ///
+    /// - Parameter unloadingModels: ask the `ollama` CLI to unload each loaded
+    ///   model before stopping. App termination passes `false`: the server is
+    ///   killed anyway (SIGTERM reclaims the memory) and skipping the
+    ///   round-trips keeps quitting fast.
     /// - Returns: `true` when nothing ollama-related is left running.
     @discardableResult
-    public func stop() -> Bool {
+    public func stop(unloadingModels: Bool = true) -> Bool {
         lifecycle.withLock {
-            if let binary = binaryPath, isServerRunning {
+            if unloadingModels, let binary = binaryPath, isServerRunning {
                 for model in loadedModelNames {
                     Shell.run(binary, ["stop", model], environment: cliEnvironment)
                 }
