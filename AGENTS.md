@@ -79,4 +79,7 @@ matches `CFBundleShortVersionString` in `resources/Info.plist` and a
 - `make lint` — swift-format plus the localization key/specifier/`Info.plist`
   check
 - `make test` — SwiftPM unit tests
-- `./scripts/ci-smoke.sh` — CLI integration smoke test against the fake server
+- `./scripts/ci-smoke.sh` — CLI integration smoke test against the fake server;
+  its final `--stop` step would stop every ollama process on the machine, so
+  the script skips that step (with a warning) when a real `ollama serve` is
+  running

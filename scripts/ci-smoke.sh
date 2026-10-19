@@ -51,6 +51,17 @@ stop_fake() {
 }
 trap stop_fake EXIT
 
+# `--stop` signals every `ollama serve` / `ollama runner` process by name (the
+# port does not matter: Stop means "nothing is left running"). On a developer
+# machine that may be a real server with loaded models, so detect it up front
+# and skip that one step instead of killing someone's work. CI has no ollama,
+# so the step still runs there.
+SKIP_STOP=""
+if pgrep -f "ollama serve" >/dev/null 2>&1; then
+    SKIP_STOP=1
+    echo "note: a real ollama server is running; skipping the --stop step"
+fi
+
 # Runs "$@" with a 10s watchdog so a regression that turns an option into a
 # running GUI app fails the smoke test instead of hanging until job timeout.
 # Sets CLI_RC and CLI_OUTPUT; exits on a watchdog kill.
@@ -166,9 +177,13 @@ fi
 stop_fake
 
 echo "== --stop with nothing running =="
-if ! OLLAMABAR_PORT="$((BASE_PORT + 3))" "$BIN" --stop >/dev/null; then
-    echo "FAIL: --stop exited non-zero with nothing running"
-    exit 1
+if [ -n "$SKIP_STOP" ]; then
+    echo "SKIPPED: a real ollama server is running, --stop would have stopped it"
+else
+    if ! OLLAMABAR_PORT="$((BASE_PORT + 3))" "$BIN" --stop >/dev/null; then
+        echo "FAIL: --stop exited non-zero with nothing running"
+        exit 1
+    fi
 fi
 
 echo "smoke: OK"
