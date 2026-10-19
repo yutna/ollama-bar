@@ -53,6 +53,14 @@ public final class OllamaService {
     /// The first installed model, used for warm-up.
     public var firstInstalledModel: String? { (try? api.syncInstalledModelNames())?.first }
 
+    /// Environment for `ollama` CLI calls: they must target the same host the
+    /// app talks to, instead of the CLI's own `127.0.0.1:11434` default.
+    private var cliEnvironment: [String: String] {
+        var environment = ProcessInfo.processInfo.environment
+        environment["OLLAMA_HOST"] = Config.settings.listenHost
+        return environment
+    }
+
     // MARK: - Lifecycle
 
     /// Full path of the `ollama` executable, if one can be found.
@@ -78,6 +86,7 @@ public final class OllamaService {
         process.arguments = ["serve"]
 
         var environment = ProcessInfo.processInfo.environment
+        environment["OLLAMA_HOST"] = Config.settings.listenHost
         environment["OLLAMA_KEEP_ALIVE"] = Config.keepAlive
         environment["OLLAMA_CONTEXT_LENGTH"] = Config.contextLength
         environment["OLLAMA_MAX_LOADED_MODELS"] = Config.maxLoadedModels
@@ -101,7 +110,7 @@ public final class OllamaService {
     public func stop() {
         if let binary = binaryPath, isServerRunning {
             for model in loadedModelNames {
-                Shell.run(binary, ["stop", model])
+                Shell.run(binary, ["stop", model], environment: cliEnvironment)
             }
         }
         if let process = serverProcess, process.isRunning {
