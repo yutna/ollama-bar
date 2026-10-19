@@ -23,6 +23,8 @@ public enum OllamaError: LocalizedError {
 public final class OllamaService {
     private(set) var serverProcess: Process?
 
+    private let api: OllamaAPI
+
     /// Where the `ollama` CLI usually lives, in order of preference.
     private static let binaryCandidates = [
         "/opt/homebrew/bin/ollama",  // Homebrew (Apple Silicon)
@@ -32,38 +34,24 @@ public final class OllamaService {
         "/Applications/Ollama.app/Contents/Resources/ollama",  // Official app bundle
     ]
 
-    public init() {}
+    public convenience init() {
+        self.init(api: OllamaAPI())
+    }
+
+    init(api: OllamaAPI) {
+        self.api = api
+    }
 
     // MARK: - API
 
-    /// `true` when the local API answers.
-    public var isServerRunning: Bool { api("/api/version") != nil }
+    /// `true` when a real Ollama server answers on the configured port.
+    public var isServerRunning: Bool { (try? api.syncVersion()) != nil }
 
     /// Names of all models currently loaded in memory.
-    public var loadedModelNames: [String] {
-        guard let json = api("/api/ps"),
-            let models = jsonObject(json)?["models"] as? [[String: Any]]
-        else { return [] }
-        return models.compactMap { ($0["model"] as? String) ?? ($0["name"] as? String) }
-    }
+    public var loadedModelNames: [String] { (try? api.syncLoadedModelNames()) ?? [] }
 
     /// The first installed model, used for warm-up.
-    public var firstInstalledModel: String? {
-        guard let json = api("/api/tags"),
-            let models = jsonObject(json)?["models"] as? [[String: Any]],
-            let first = models.first
-        else { return nil }
-        return (first["model"] as? String) ?? (first["name"] as? String)
-    }
-
-    private func api(_ path: String) -> String? {
-        Shell.capture("/usr/bin/curl", ["-s", "--max-time", "2", Config.apiBase + path])
-    }
-
-    private func jsonObject(_ text: String) -> [String: Any]? {
-        guard let data = text.data(using: .utf8) else { return nil }
-        return (try? JSONSerialization.jsonObject(with: data)) as? [String: Any]
-    }
+    public var firstInstalledModel: String? { (try? api.syncInstalledModelNames())?.first }
 
     // MARK: - Lifecycle
 
@@ -129,7 +117,7 @@ public final class OllamaService {
     public func warmUp() -> Bool {
         guard let model = firstInstalledModel else { return false }
         let body = "{\"model\":\"\(model)\"}"
-        return Shell.run(
+        let exitCode = Shell.run(
             "/usr/bin/curl",
             [
                 "-s", "--max-time", "90", "-X", "POST",
@@ -139,6 +127,7 @@ public final class OllamaService {
             ],
             timeout: 95
         )
+        return exitCode == 0
     }
 
     // MARK: - Logging

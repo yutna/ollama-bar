@@ -38,4 +38,14 @@ if [ "$status" != "running model-loaded" ]; then
 fi
 stop_fake
 
+echo "== impostor server (404) is not mistaken for Ollama =="
+start_fake impostor
+status=$(OLLAMABAR_PORT="$PORT" "$BIN" --status)
+echo "status: $status"
+if [ "$status" != "stopped" ]; then
+    echo "FAIL: expected 'stopped' for a non-Ollama server, got '$status'"
+    exit 1
+fi
+stop_fake
+
 echo "smoke: OK"
