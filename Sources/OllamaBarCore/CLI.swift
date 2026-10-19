@@ -19,24 +19,22 @@ public enum CLI {
                 print("failed: \(error.localizedDescription)")
                 exit(1)
             }
-            Thread.sleep(forTimeInterval: 2)
             let running = service.isServerRunning
             print(running ? "running" : "failed")
             exit(running ? 0 : 1)
         }
 
         if arguments.contains("--stop") {
-            service.stop()
-            Thread.sleep(forTimeInterval: 1)
-            print(service.isServerRunning ? "still-running" : "stopped")
-            exit(0)
+            let stopped = service.stop()
+            print(stopped ? "stopped" : "still-running")
+            exit(stopped ? 0 : 1)
         }
 
         if arguments.contains("--warm") {
             service.warmUp()
             let ready = service.isServerRunning && !service.loadedModelNames.isEmpty
             print(ready ? "loaded" : "not-loaded")
-            exit(0)
+            exit(ready ? 0 : 1)
         }
 
         if arguments.contains("--status") {
