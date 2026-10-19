@@ -24,10 +24,39 @@ public enum OllamaError: LocalizedError {
 /// `start()` and `stop()` are serialized through a gate, so callers on
 /// different threads never spawn or kill servers concurrently.
 public final class OllamaService {
-    private(set) var serverProcess: Process?
+    private let processLock = NSLock()
+    private var storedProcess: Process?
+
+    /// The server process this instance spawned, if any.
+    ///
+    /// Mutated while the lifecycle gate is held, but guarded by its own tiny
+    /// lock: `ownsRunningServer` is read from the main thread, and waiting for
+    /// the gate there could freeze the menu for the whole startup timeout.
+    var serverProcess: Process? {
+        get {
+            processLock.lock()
+            defer { processLock.unlock() }
+            return storedProcess
+        }
+        set {
+            processLock.lock()
+            defer { processLock.unlock() }
+            storedProcess = newValue
+        }
+    }
+
+    /// `true` while this instance owns a spawned `ollama serve` process, even
+    /// when the API is not answering yet (still starting up, or hung).
+    ///
+    /// The menu offers Stop in that state: `start()` refuses to spawn twice
+    /// and returns without a word, so Start would be a silent no-op.
+    public var ownsRunningServer: Bool { serverProcess?.isRunning == true }
 
     private let api: OllamaAPI
-    private let lifecycle = LifecycleGate()
+
+    /// Serializes `start()`/`stop()`; internal so tests can hold it and check
+    /// that reading process state never waits for a start in flight.
+    let lifecycle = LifecycleGate()
 
     /// Kept between `attachLog` and a successful spawn: the parent's copies of
     /// the pipe are closed once the child owns the write end.
