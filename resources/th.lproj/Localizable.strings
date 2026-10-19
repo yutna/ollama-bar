@@ -19,6 +19,12 @@
 /* Menu item that toggles the login item */
 "menu.login" = "แสดงไอคอนตอนล็อกอิน";
 
+/* Menu item shown while the login item awaits approval in System Settings */
+"menu.login.pending" = "รายการล็อกอินรออนุมัติ — เปิด System Settings";
+
+/* Accessibility label of the menu bar icon */
+"accessibility.icon" = "OllamaBar";
+
 /* Menu item that quits the app */
 "menu.quit" = "ออก (ปิด Ollama ด้วย)";
 

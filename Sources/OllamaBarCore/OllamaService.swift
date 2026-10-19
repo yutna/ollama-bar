@@ -60,6 +60,14 @@ public final class OllamaService {
     /// The first installed model, used for warm-up.
     public var firstInstalledModel: String? { (try? api.syncInstalledModelNames())?.first }
 
+    /// Async snapshot for the UI: never blocks the main thread.
+    public func status() async -> (isRunning: Bool, loadedModels: [String]) {
+        guard (try? await api.version()) != nil else {
+            return (false, [])
+        }
+        return (true, (try? await api.loadedModelNames()) ?? [])
+    }
+
     /// Environment for `ollama` CLI calls: they must target the same host the
     /// app talks to, instead of the CLI's own `127.0.0.1:11434` default.
     private var cliEnvironment: [String: String] {
