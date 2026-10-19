@@ -57,3 +57,9 @@
 
 /* Alert body when warm-up is requested but no model is installed */
 "alert.noModels.body" = "รัน `ollama pull <model>` ก่อน";
+
+/* Alert title when warm-up fails */
+"alert.warmFailed.title" = "โหลดโมเดลล่วงหน้าไม่สำเร็จ";
+
+/* Alert body when warm-up fails. %@ is the model name */
+"alert.warmFailed.body" = "โหลด %@ ล่วงหน้าไม่สำเร็จ ดูรายละเอียดได้ที่ ~/.ollama/logs/server.log";

@@ -97,4 +97,14 @@ public enum L10n {
     public static var alertNoModelsBody: String {
         String(localized: "alert.noModels.body", defaultValue: "Run `ollama pull <model>` first.")
     }
+
+    public static var alertWarmFailedTitle: String {
+        String(localized: "alert.warmFailed.title", defaultValue: "Could not warm up the model")
+    }
+
+    public static var alertWarmFailedBody: String {
+        String(
+            localized: "alert.warmFailed.body",
+            defaultValue: "Preloading %@ failed. Check ~/.ollama/logs/server.log for details.")
+    }
 }

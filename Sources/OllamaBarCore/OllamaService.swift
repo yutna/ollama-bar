@@ -57,8 +57,29 @@ public final class OllamaService {
     /// Names of all models currently loaded in memory.
     public var loadedModelNames: [String] { (try? api.syncLoadedModelNames()) ?? [] }
 
-    /// The first installed model, used for warm-up.
-    public var firstInstalledModel: String? { (try? api.syncInstalledModelNames())?.first }
+    /// The first installed model that can generate text, used for warm-up.
+    ///
+    /// Embedding-only models (e.g. `nomic-embed-text`) are skipped so warm-up
+    /// does not preload a model that could never answer a chat request.
+    public var firstInstalledModel: String? {
+        guard let models = try? api.syncInstalledModels() else { return nil }
+        return Self.warmUpCandidate(in: models)
+    }
+
+    /// Picks the warm-up candidate: first generative model, or the first
+    /// installed model when everything is an embedding model.
+    static func warmUpCandidate(in models: [OllamaAPI.InstalledModel]) -> String? {
+        let generative = models.filter { !isEmbeddingModel($0) }
+        return (generative.first ?? models.first)?.name
+    }
+
+    /// Heuristic: embedding models are named `*embed*` or belong to the
+    /// `bert` family (`bert`, `nomic-bert`, ...).
+    static func isEmbeddingModel(_ model: OllamaAPI.InstalledModel) -> Bool {
+        if model.name.lowercased().contains("embed") { return true }
+        if let family = model.family?.lowercased(), family.contains("bert") { return true }
+        return false
+    }
 
     /// Async snapshot for the UI: never blocks the main thread.
     public func status() async -> (isRunning: Bool, loadedModels: [String]) {
@@ -167,18 +188,12 @@ public final class OllamaService {
     @discardableResult
     public func warmUp() -> Bool {
         guard let model = firstInstalledModel else { return false }
-        let body = "{\"model\":\"\(model)\"}"
-        let exitCode = Shell.run(
-            "/usr/bin/curl",
-            [
-                "-s", "--max-time", "90", "-X", "POST",
-                Config.apiBase + "/api/generate",
-                "-H", "Content-Type: application/json",
-                "-d", body,
-            ],
-            timeout: 95
-        )
-        return exitCode == 0
+        do {
+            try api.syncWarmUp(model: model, keepAlive: Config.keepAlive)
+            return true
+        } catch {
+            return false
+        }
     }
 
     // MARK: - Readiness
@@ -243,6 +258,7 @@ public final class OllamaService {
         let directory = NSHomeDirectory() + "/.ollama/logs"
         try? FileManager.default.createDirectory(atPath: directory, withIntermediateDirectories: true)
         let file = directory + "/server.log"
+        Self.rotateLogIfNeeded(at: file)
         if !FileManager.default.fileExists(atPath: file) {
             _ = FileManager.default.createFile(atPath: file, contents: nil)
         }
@@ -254,5 +270,21 @@ public final class OllamaService {
             process.standardOutput = FileHandle.nullDevice
             process.standardError = FileHandle.nullDevice
         }
+    }
+
+    /// Largest log file kept before it is rotated to `server.log.1`.
+    static let maxLogBytes: UInt64 = 10 * 1024 * 1024
+
+    /// Moves `server.log` aside when it grew beyond `maxBytes`, so the log
+    /// cannot fill the disk over time. The previous rotation is replaced.
+    static func rotateLogIfNeeded(at path: String, maxBytes: UInt64 = maxLogBytes) {
+        guard
+            let attributes = try? FileManager.default.attributesOfItem(atPath: path),
+            let size = attributes[.size] as? UInt64,
+            size > maxBytes
+        else { return }
+        let rotated = path + ".1"
+        try? FileManager.default.removeItem(atPath: rotated)
+        try? FileManager.default.moveItem(atPath: path, toPath: rotated)
     }
 }
