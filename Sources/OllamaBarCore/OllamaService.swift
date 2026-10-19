@@ -277,7 +277,10 @@ public final class OllamaService {
     @discardableResult
     public func stop(unloadingModels: Bool = true) -> Bool {
         lifecycle.withLock {
-            if unloadingModels, let binary = binaryPath, isServerRunning {
+            // Look for the binary last: a stopped server has nothing to unload,
+            // and the login-shell fallback can take seconds (or, with a
+            // misbehaving profile, forever — see Shell's bounded drain).
+            if unloadingModels, isServerRunning, let binary = binaryPath {
                 for model in loadedModelNames {
                     Shell.run(binary, ["stop", model], environment: cliEnvironment)
                 }
