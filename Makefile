@@ -41,6 +41,7 @@ test:
 lint:
 	$(FORMAT) lint --configuration .swift-format --recursive Sources
 	perl scripts/check-strings.pl
+	sh scripts/check-strings-test.sh
 
 format:
 	$(FORMAT) format --in-place --configuration .swift-format --recursive Sources

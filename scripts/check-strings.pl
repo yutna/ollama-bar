@@ -8,7 +8,9 @@
 #
 # The reference file is English. Every other file must:
 #   - define exactly the same keys
-#   - use the same format specifiers as the reference value
+#   - pass the same arguments to String(format:) as the reference value: the
+#     same conversion type per argument, in the same order unless the
+#     translation reorders them with positional specifiers (%1$@, %2$d, ...)
 # Additionally:
 #   - every key passed to String(localized:) in L10n.swift must exist
 #   - every `defaultValue:` in L10n.swift must match the English value
@@ -48,10 +50,10 @@ for my $file (@files) {
             $failed = 1;
             next;
         }
-        my @expected = specifiers($reference->{$key});
-        my @actual = specifiers($entries->{$key});
-        if ("@expected" ne "@actual") {
-            print STDERR "format mismatch for \"$key\" in $file: expected [@expected], got [@actual]\n";
+        if (!same_arguments($reference->{$key}, $entries->{$key})) {
+            print STDERR "format mismatch for \"$key\" in $file: "
+                . "expected [" . describe_arguments($reference->{$key}) . "], "
+                . "got [" . describe_arguments($entries->{$key}) . "]\n";
             $failed = 1;
         }
     }
@@ -150,11 +152,52 @@ sub parse_strings {
     return \%entries;
 }
 
-sub specifiers {
+# Maps every argument a format string consumes to its conversion type, keyed
+# by argument index (0 for the first). Plain specifiers take the next
+# argument in order, positional ones (%1$@) name theirs, which is how a
+# translation may reorder arguments safely. Using one argument with two
+# different types is broken and returns undef, so it is reported instead of
+# being normalized away.
+sub argument_types {
     my ($value) = @_;
     $value =~ s/%%//g;
-    my @found = ($value =~ /%(?:\d+\$)?[-+ #0]*\d*(?:\.\d+)?[\@dDuUxXoOfeEgGcs]/g);
-    return sort @found;
+    my %types;
+    my $next = 0;
+    my $broken = 0;
+    while ($value =~ /%(?:(\d+)\$)?[-+ #0]*\d*(?:\.\d+)?([\@dDuUxXoOfeEgGcs])/g) {
+        my ($index, $conversion) = ($1, $2);
+        $index = defined $index ? $index - 1 : $next++;
+        $broken = 1 if exists $types{$index} && $types{$index} ne $conversion;
+        $types{$index} = $conversion;
+    }
+    return $broken ? undef : \%types;
+}
+
+# True when both values consume the same arguments with the same conversion
+# types. The order inside the string does not matter, only which argument each
+# specifier takes: comparing sorted specifier multisets accepts a translation
+# that swaps plain specifiers ("%@ ... %d" for "%d ... %@"), and at runtime
+# String(format:) then reads an Int as an object pointer.
+sub same_arguments {
+    my ($expected, $actual) = @_;
+    my $expected_types = argument_types($expected);
+    my $actual_types = argument_types($actual);
+    return 0 unless defined $expected_types && defined $actual_types;
+    my $signature = sub {
+        my ($types) = @_;
+        return join ",", map { "$_=$types->{$_}" } sort { $a <=> $b } keys %$types;
+    };
+    return $signature->($expected_types) eq $signature->($actual_types);
+}
+
+# Renders the arguments a value consumes the way a translator writes them, for
+# error messages: "%1$d %2$@".
+sub describe_arguments {
+    my ($value) = @_;
+    my $types = argument_types($value);
+    return "unusable specifiers (one argument used with two types)" unless defined $types;
+    my @parts = map { "%" . ($_ + 1) . "\$" . $types->{$_} } sort { $a <=> $b } keys %$types;
+    return @parts ? join(" ", @parts) : "none";
 }
 
 # Turns the escape sequences shared by Swift literals and .strings values into

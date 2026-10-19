@@ -9,7 +9,9 @@ keep changes focused and easy to review.
 - **Feature requests** — open an issue first so we can discuss the design.
 - **Translations** — add a `resources/<language>.lproj/Localizable.strings`
   (copy `resources/en.lproj/` as the reference for keys) and list the language
-  in `resources/Info.plist`.
+  in `resources/Info.plist`. `make lint` checks that a value consumes the same
+  arguments as English; to reorder them use positional specifiers (`%1$@`,
+  `%2$d`) instead of swapping the plain ones.
 - **Pull requests** — bug fixes and small improvements are welcome.
 
 ## Development setup
