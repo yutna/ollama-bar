@@ -36,12 +36,22 @@ public final class OllamaService {
     static let stopGracePeriod: TimeInterval = 3
 
     /// Where the `ollama` CLI usually lives, in order of preference.
-    private static let binaryCandidates = [
+    ///
+    /// The GUI app inherits the minimal launchd `PATH`, so `which` alone
+    /// misses binaries that live in the user's shell profile; the common
+    /// non-Homebrew locations (MacPorts, `~/.local/bin`, version-manager
+    /// shims) are listed explicitly instead.
+    static let binaryCandidates = [
         "/opt/homebrew/bin/ollama",  // Homebrew (Apple Silicon)
         "/usr/local/bin/ollama",  // Homebrew (Intel) / manual
         "/opt/homebrew/opt/ollama/bin/ollama",  // Homebrew keg path
         "/usr/local/opt/ollama/bin/ollama",
         "/Applications/Ollama.app/Contents/Resources/ollama",  // Official app bundle
+        "/opt/local/bin/ollama",  // MacPorts
+        NSHomeDirectory() + "/.local/bin/ollama",
+        NSHomeDirectory() + "/bin/ollama",
+        NSHomeDirectory() + "/.asdf/shims/ollama",
+        NSHomeDirectory() + "/.local/share/mise/shims/ollama",
     ]
 
     public convenience init() {
@@ -103,16 +113,65 @@ public final class OllamaService {
     // MARK: - Lifecycle
 
     /// Full path of the `ollama` executable, if one can be found.
+    ///
+    /// Search order: known install locations, then `PATH` (trustworthy only
+    /// when the app is launched from a terminal), then the user's login shell
+    /// for entries the shell profile adds to `PATH` — GUI apps never see
+    /// those.
     public var binaryPath: String? {
-        for path in Self.binaryCandidates where FileManager.default.isExecutableFile(atPath: path) {
-            return path
+        if let candidate = Self.firstExecutable(in: Self.binaryCandidates) {
+            return candidate
         }
-        if let resolved = Shell.capture("/usr/bin/env", ["which", "ollama"])?
-            .trimmingCharacters(in: .whitespacesAndNewlines), !resolved.isEmpty
+        if let output = Shell.capture("/usr/bin/env", ["which", "ollama"]),
+            let resolved = Self.executableFromShell(output: output)
+        {
+            return resolved
+        }
+        let shell = Self.loginShell
+        if let output = Shell.capture(shell, ["-l", "-c", "command -v ollama"], timeout: 5),
+            let resolved = Self.executableFromShell(output: output)
         {
             return resolved
         }
         return nil
+    }
+
+    /// First path in `paths` that exists and is executable.
+    static func firstExecutable(
+        in paths: [String],
+        isExecutable: (String) -> Bool = { FileManager.default.isExecutableFile(atPath: $0) }
+    ) -> String? {
+        paths.first(where: isExecutable)
+    }
+
+    /// Extracts an executable named `ollama` from shell output.
+    ///
+    /// Profiles may print banners, and `command -v` prints an alias or a
+    /// function definition instead of a path when the user has one, so every
+    /// line has to be an absolute path to `ollama` and the last match wins.
+    static func executableFromShell(
+        output: String,
+        isExecutable: (String) -> Bool = { FileManager.default.isExecutableFile(atPath: $0) }
+    ) -> String? {
+        for line in output.split(separator: "\n").reversed() {
+            let path = line.trimmingCharacters(in: .whitespaces)
+            guard path.hasPrefix("/"),
+                (path as NSString).lastPathComponent == "ollama",
+                isExecutable(path)
+            else { continue }
+            return path
+        }
+        return nil
+    }
+
+    /// The user's login shell for the `PATH` fallback, with a safe default.
+    private static var loginShell: String {
+        if let shell = ProcessInfo.processInfo.environment["SHELL"],
+            FileManager.default.isExecutableFile(atPath: shell)
+        {
+            return shell
+        }
+        return "/bin/zsh"
     }
 
     /// Starts `ollama serve` with the optimized environment and waits until

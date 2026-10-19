@@ -34,7 +34,7 @@ OllamaBar เปลี่ยนให้เหลือแค่คลิกเ�
 - "แสดงไอคอนตอนล็อกอิน" แบบเลือกได้ (เฉพาะไอคอน — Ollama ยังไม่ทำงานจนกว่าจะกดเริ่ม)
 - โหมด CLI สำหรับ script (`--start`, `--stop`, `--status`, `--warm`, `--help`, `--version`) — option ที่ไม่รู้จักจะพิมพ์ usage แล้ว exit 2
 - UI หลายภาษา — English, ไทย, 日本語, 简体中文, 한국어, Español, Français, Deutsch — ตามภาษาของระบบ
-- หา Ollama เจอไม่ว่าจะติดตั้งที่ไหน: Homebrew (Apple Silicon หรือ Intel) หรือแอปทางการ
+- หา Ollama เจอไม่ว่าจะติดตั้งที่ไหน: Homebrew (Apple Silicon หรือ Intel), MacPorts, `~/.local/bin`, shim ของ version manager หรือแอปทางการ
 
 ## ความต้องการของระบบ
 

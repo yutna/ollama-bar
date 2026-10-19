@@ -35,7 +35,7 @@ starts only when you ask it to.
 - Optional "Show icon at login" (icon only — Ollama itself stays off until you click Start)
 - CLI mode for scripts (`--start`, `--stop`, `--status`, `--warm`, `--help`, `--version`); unknown options print the usage and exit 2
 - Localized UI — English, ไทย, 日本語, 简体中文, 한국어, Español, Français, Deutsch — follows your system language
-- Finds Ollama wherever it lives: Homebrew (Apple Silicon or Intel) or the official app
+- Finds Ollama wherever it lives: Homebrew (Apple Silicon or Intel), MacPorts, `~/.local/bin`, version-manager shims, or the official app
 
 ## Requirements
 
