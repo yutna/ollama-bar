@@ -54,6 +54,9 @@ public final class OllamaService {
 
     private let api: OllamaAPI
 
+    /// Where the log pump writes; injectable so tests can use a temp file.
+    let logPath: String
+
     /// Serializes `start()`/`stop()`; internal so tests can hold it and check
     /// that reading process state never waits for a start in flight.
     let lifecycle = LifecycleGate()
@@ -91,8 +94,9 @@ public final class OllamaService {
         self.init(api: OllamaAPI())
     }
 
-    init(api: OllamaAPI) {
+    init(api: OllamaAPI, logPath: String = OllamaService.logFilePath) {
         self.api = api
+        self.logPath = logPath
     }
 
     // MARK: - API
@@ -254,7 +258,7 @@ public final class OllamaService {
 
             // Everything already in the log belongs to an earlier session;
             // only what this start appends can explain a failure.
-            let logOffset = Self.logFileSize(at: Self.logFilePath)
+            let logOffset = Self.logFileSize(at: logPath)
 
             do {
                 try process.run()
@@ -376,7 +380,7 @@ public final class OllamaService {
         // The pump writes from another process: give it a moment to drain the
         // child's last output before reading the file.
         Thread.sleep(forTimeInterval: 0.2)
-        let tail = Self.logTail(at: Self.logFilePath, since: offset)
+        let tail = Self.logTail(at: logPath, since: offset)
         guard !tail.isEmpty else {
             return L10n.errorLaunchTimeout(seconds)
         }
@@ -423,14 +427,22 @@ public final class OllamaService {
     /// server would die with SIGPIPE at its next log write. Rotation while the
     /// server runs only works when the writer is the app's side of the pipe.
     private func attachLog(to process: Process) {
+        attachLog(to: process, pumpExecutable: Bundle.main.executableURL)
+    }
+
+    /// Wires the child's output into the log through a `--log-pump` helper.
+    ///
+    /// `pumpExecutable` is internal so tests can pass a stub instead of this
+    /// binary: the pump protocol is "read stdin, write the log file at argv[2]".
+    func attachLog(to process: Process, pumpExecutable: URL?) {
         let pipe = Pipe()
         // Do not leak the pipe ends into helper processes: an inherited
         // duplicate of the write end would keep the pump waiting for an EOF
         // that never comes.
         Self.setCloseOnExec(pipe.fileHandleForReading.fileDescriptor)
         Self.setCloseOnExec(pipe.fileHandleForWriting.fileDescriptor)
-        guard let executable = Bundle.main.executableURL,
-            Self.spawnLogPump(executable, input: pipe)
+        guard let executable = pumpExecutable,
+            Self.spawnLogPump(executable, logPath: logPath, input: pipe)
         else {
             attachFileLog(to: process)
             return
@@ -443,11 +455,26 @@ public final class OllamaService {
     /// Fallback when the pump cannot be started: the child writes the file
     /// itself, which the app can only rotate at the next start.
     private func attachFileLog(to process: Process) {
-        let writer = RotatingLogWriter(path: Self.logFilePath)
+        attachFileLog(to: process, maxBytes: Config.logMaxBytes)
+    }
+
+    /// Fallback used when the log pump cannot be started: hand the file over to
+    /// the child directly.
+    ///
+    /// The child then owns the handle, so the log can no longer be rotated
+    /// while the server runs — the price of a start without a pump. It is still
+    /// opened with `O_APPEND` and the configured cap (`OLLAMABAR_LOG_MAX_BYTES`)
+    /// is applied before the handover, so the server's lines end up at the end
+    /// of the file even while something else appends, and an oversized log left
+    /// by a previous session is rotated instead of ignored.
+    ///
+    /// - Parameter maxBytes: cap for the handover rotation; tests pass a small
+    ///   value instead of the process-wide configuration.
+    func attachFileLog(to process: Process, maxBytes: UInt64) {
+        let writer = RotatingLogWriter(path: logPath, maxBytes: maxBytes)
         writer.open()
         writer.close()
-        if let handle = try? FileHandle(forWritingTo: URL(fileURLWithPath: Self.logFilePath)) {
-            handle.seekToEndOfFile()
+        if let handle = RotatingLogWriter.openForAppending(logPath) {
             process.standardOutput = handle
             process.standardError = handle
         } else {
@@ -457,10 +484,10 @@ public final class OllamaService {
     }
 
     /// Starts the current binary in its hidden log-pump mode.
-    private static func spawnLogPump(_ executable: URL, input: Pipe) -> Bool {
+    private static func spawnLogPump(_ executable: URL, logPath: String, input: Pipe) -> Bool {
         let pump = Process()
         pump.executableURL = executable
-        pump.arguments = ["--log-pump", logFilePath]
+        pump.arguments = ["--log-pump", logPath]
         pump.standardInput = input
         pump.standardOutput = FileHandle.nullDevice
         pump.standardError = FileHandle.nullDevice
