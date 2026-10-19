@@ -103,13 +103,22 @@ public final class OllamaService {
     /// Names of all models currently loaded in memory.
     public var loadedModelNames: [String] { (try? api.syncLoadedModelNames()) ?? [] }
 
-    /// The first installed model that can generate text, used for warm-up.
+    /// What a warm-up request would preload, so the UI can tell "no models
+    /// installed" apart from "the server did not answer".
+    public enum WarmUpTarget: Equatable {
+        case model(String)
+        case noModels
+        case serverUnreachable
+    }
+
+    /// Decides what warm-up should load.
     ///
     /// Embedding-only models (e.g. `nomic-embed-text`) are skipped so warm-up
     /// does not preload a model that could never answer a chat request.
-    public var firstInstalledModel: String? {
-        guard let models = try? api.syncInstalledModels() else { return nil }
-        return Self.warmUpCandidate(in: models)
+    public func warmUpTarget() -> WarmUpTarget {
+        guard let models = try? api.syncInstalledModels() else { return .serverUnreachable }
+        guard let name = Self.warmUpCandidate(in: models) else { return .noModels }
+        return .model(name)
     }
 
     /// Picks the warm-up candidate: first generative model, or the first
@@ -308,7 +317,7 @@ public final class OllamaService {
     @discardableResult
     public func warmUp() -> Bool {
         guard Self.shouldPreloadModel(loadedModels: loadedModelNames) else { return true }
-        guard let model = firstInstalledModel else { return false }
+        guard case .model(let model) = warmUpTarget() else { return false }
         do {
             try api.syncWarmUp(model: model, keepAlive: Config.keepAlive)
             return true

@@ -64,6 +64,12 @@
 /* Alert body when warm-up is requested but no model is installed */
 "alert.noModels.body" = "รัน `ollama pull <model>` ก่อน";
 
+/* Alert title when warm-up is requested but the server does not answer */
+"alert.unreachable.title" = "Ollama ไม่ตอบสนอง";
+
+/* Alert body when warm-up is requested but the server does not answer */
+"alert.unreachable.body" = "เซิร์ฟเวอร์ไม่ตอบสนองต่อคำขอ เริ่มเซิร์ฟเวอร์แล้วลองอีกครั้ง";
+
 /* Alert title when warm-up fails */
 "alert.warmFailed.title" = "โหลดโมเดลล่วงหน้าไม่สำเร็จ";
 

@@ -213,18 +213,24 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
     @objc private func warmAction() {
         Task.detached { [weak self] in
             guard let self else { return }
-            guard let model = self.service.firstInstalledModel else {
-                await MainActor.run { self.alert(title: L10n.alertNoModelsTitle, body: L10n.alertNoModelsBody) }
-                return
-            }
-            let warmed = self.service.warmUp()
-            await MainActor.run {
-                if !warmed {
-                    self.alert(
-                        title: L10n.alertWarmFailedTitle,
-                        body: String(format: L10n.alertWarmFailedBody, model))
+            switch self.service.warmUpTarget() {
+            case .serverUnreachable:
+                await MainActor.run {
+                    self.alert(title: L10n.alertUnreachableTitle, body: L10n.alertUnreachableBody)
+                    self.refreshState()
                 }
-                self.refreshState()
+            case .noModels:
+                await MainActor.run { self.alert(title: L10n.alertNoModelsTitle, body: L10n.alertNoModelsBody) }
+            case .model(let model):
+                let warmed = self.service.warmUp()
+                await MainActor.run {
+                    if !warmed {
+                        self.alert(
+                            title: L10n.alertWarmFailedTitle,
+                            body: String(format: L10n.alertWarmFailedBody, model))
+                    }
+                    self.refreshState()
+                }
             }
         }
     }
