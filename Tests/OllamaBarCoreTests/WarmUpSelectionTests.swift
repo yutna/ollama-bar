@@ -42,4 +42,11 @@ final class WarmUpSelectionTests: XCTestCase {
     func testNilWhenNothingInstalled() {
         XCTAssertNil(OllamaService.warmUpCandidate(in: []))
     }
+
+    func testShouldPreloadOnlyWhenNothingIsLoaded() {
+        XCTAssertTrue(OllamaService.shouldPreloadModel(loadedModels: []))
+        XCTAssertFalse(OllamaService.shouldPreloadModel(loadedModels: ["llama3:latest"]))
+        XCTAssertFalse(
+            OllamaService.shouldPreloadModel(loadedModels: ["llama3:latest", "qwen2:latest"]))
+    }
 }

@@ -251,8 +251,13 @@ public final class OllamaService {
     }
 
     /// Preloads the first installed model so the next request is instant.
+    ///
+    /// A no-op when a model is already loaded: with the default
+    /// `OLLAMA_MAX_LOADED_MODELS=1`, loading another one would evict the model
+    /// the user is working with.
     @discardableResult
     public func warmUp() -> Bool {
+        guard Self.shouldPreloadModel(loadedModels: loadedModelNames) else { return true }
         guard let model = firstInstalledModel else { return false }
         do {
             try api.syncWarmUp(model: model, keepAlive: Config.keepAlive)
@@ -260,6 +265,12 @@ public final class OllamaService {
         } catch {
             return false
         }
+    }
+
+    /// Warm-up only preloads a model when nothing is loaded; otherwise Ollama
+    /// would have to unload the model in use to make room.
+    static func shouldPreloadModel(loadedModels: [String]) -> Bool {
+        loadedModels.isEmpty
     }
 
     // MARK: - Readiness

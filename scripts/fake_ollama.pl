@@ -1,10 +1,12 @@
 #!/usr/bin/perl
 # Minimal fake Ollama API used by integration smoke tests.
 #
-# Usage: fake_ollama.pl <port> [healthy|impostor]
+# Usage: fake_ollama.pl <port> [healthy|cold|impostor]
 #
 # Modes:
 #   healthy   (default) answers /api/version, /api/ps, /api/tags and /api/generate
+#   cold      like healthy, but /api/ps reports no loaded model until a
+#             /api/generate request arrives
 #   impostor  answers 404 for every request, simulating a non-Ollama service
 #
 # Written in Perl on purpose: it ships with macOS, starts in milliseconds, and
@@ -20,9 +22,15 @@ $mode = "healthy" unless defined $mode;
 
 my %bodies = (
     healthy  => '{"version":"0.0.0-test","models":[{"name":"fake:latest","model":"fake:latest"}]}',
+    empty    => '{"version":"0.0.0-test","models":[]}',
     notfound => '{"error":"not found"}',
     generate => '{"response":"","done":true}',
 );
+
+# `cold` starts with no loaded model; a generate request loads it like the
+# real server would.
+my $cold = $mode eq "cold";
+my $loaded = !$cold;
 
 my $server = IO::Socket::INET->new(
     LocalAddr => "127.0.0.1",
@@ -65,10 +73,14 @@ while (my $client = $server->accept) {
     if ($mode eq "impostor") {
         ($status, $body) = ("404 Not Found", $bodies{notfound});
     }
-    elsif ($path eq "/api/version" || $path eq "/api/ps" || $path eq "/api/tags") {
+    elsif ($path eq "/api/ps") {
+        ($status, $body) = ("200 OK", $loaded ? $bodies{healthy} : $bodies{empty});
+    }
+    elsif ($path eq "/api/version" || $path eq "/api/tags") {
         ($status, $body) = ("200 OK", $bodies{healthy});
     }
     elsif ($method eq "POST" && $path eq "/api/generate") {
+        $loaded = 1 if $cold;
         ($status, $body) = ("200 OK", $bodies{generate});
     }
     else {
