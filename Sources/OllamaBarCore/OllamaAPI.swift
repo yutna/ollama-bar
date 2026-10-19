@@ -19,6 +19,16 @@ struct OllamaAPI {
     /// Request timeout, in seconds.
     static let timeout: TimeInterval = 2
 
+    /// Warm-up may have to load a multi-gigabyte model from disk.
+    static let warmUpTimeout: TimeInterval = 120
+
+    /// An installed model as reported by `GET /api/tags`.
+    struct InstalledModel: Equatable {
+        let name: String
+        /// Model family, e.g. `llama`, `qwen2`, or `bert` for embedding models.
+        let family: String?
+    }
+
     let baseURL: URL
     private let session: URLSession
 
@@ -48,9 +58,43 @@ struct OllamaAPI {
         modelNames(in: try await getObject("/api/ps"))
     }
 
+    /// `GET /api/tags` — every installed model, in server order.
+    func installedModels() async throws -> [InstalledModel] {
+        let json = try await getObject("/api/tags")
+        guard let models = json["models"] as? [[String: Any]] else { return [] }
+        return models.compactMap { entry in
+            guard let name = (entry["model"] as? String) ?? (entry["name"] as? String) else { return nil }
+            let family = (entry["details"] as? [String: Any])?["family"] as? String
+            return InstalledModel(name: name, family: family)
+        }
+    }
+
     /// `GET /api/tags` — names of every installed model, in server order.
     func installedModelNames() async throws -> [String] {
-        modelNames(in: try await getObject("/api/tags"))
+        try await installedModels().map(\.name)
+    }
+
+    /// `POST /api/generate` — loads `model` into memory and keeps it there
+    /// according to `keepAlive` (`-1` = forever).
+    func warmUp(model: String, keepAlive: String) async throws {
+        var body: [String: Any] = ["model": model]
+        // Ollama accepts a number of seconds or a duration string; keep `-1`
+        // numeric so "forever" is unambiguous.
+        if let seconds = Int(keepAlive) {
+            body["keep_alive"] = seconds
+        } else {
+            body["keep_alive"] = keepAlive
+        }
+        var request = URLRequest(url: url("/api/generate"))
+        request.httpMethod = "POST"
+        request.timeoutInterval = Self.warmUpTimeout
+        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        request.httpBody = try JSONSerialization.data(withJSONObject: body)
+
+        let (_, response) = try await session.data(for: request)
+        if let http = response as? HTTPURLResponse, !(200..<300).contains(http.statusCode) {
+            throw OllamaAPIError.badStatus(http.statusCode)
+        }
     }
 
     // MARK: - Sync bridges
@@ -63,17 +107,22 @@ struct OllamaAPI {
         try blocking { try await self.loadedModelNames() }
     }
 
-    func syncInstalledModelNames() throws -> [String] {
-        try blocking { try await self.installedModelNames() }
+    func syncInstalledModels() throws -> [InstalledModel] {
+        try blocking { try await self.installedModels() }
+    }
+
+    func syncWarmUp(model: String, keepAlive: String) throws {
+        try blocking(timeout: Self.warmUpTimeout) { try await self.warmUp(model: model, keepAlive: keepAlive) }
     }
 
     // MARK: - Implementation
 
+    private func url(_ path: String) -> URL {
+        URL(string: baseURL.absoluteString + path) ?? baseURL
+    }
+
     private func getObject(_ path: String) async throws -> [String: Any] {
-        guard let url = URL(string: baseURL.absoluteString + path) else {
-            throw OllamaAPIError.malformedResponse
-        }
-        let (data, response) = try await session.data(from: url)
+        let (data, response) = try await session.data(from: url(path))
         if let http = response as? HTTPURLResponse, !(200..<300).contains(http.statusCode) {
             throw OllamaAPIError.badStatus(http.statusCode)
         }
@@ -92,7 +141,7 @@ struct OllamaAPI {
     ///
     /// Callers that must stay synchronous (the CLI) use this; the UI uses the
     /// async entry points directly so it never blocks the main thread.
-    private func blocking<T>(_ operation: @escaping () async throws -> T) throws -> T {
+    private func blocking<T>(timeout: TimeInterval? = nil, _ operation: @escaping () async throws -> T) throws -> T {
         let box = ResultBox<T>()
         let semaphore = DispatchSemaphore(value: 0)
         Task.detached {
@@ -103,7 +152,7 @@ struct OllamaAPI {
             }
             semaphore.signal()
         }
-        guard semaphore.wait(timeout: .now() + Self.timeout + 1) == .success else {
+        guard semaphore.wait(timeout: .now() + (timeout ?? Self.timeout) + 1) == .success else {
             throw OllamaAPIError.timedOut
         }
         guard let result = box.result else { throw OllamaAPIError.timedOut }
@@ -118,10 +167,12 @@ private final class ResultBox<T>: @unchecked Sendable {
 
 extension URLSession {
     /// Session with short timeouts, suited to probing a local server.
+    ///
+    /// The resource timeout is left at its default so long-running requests
+    /// (warm-up) can override the per-request timeout.
     static var ollama: URLSession {
         let configuration = URLSessionConfiguration.ephemeral
         configuration.timeoutIntervalForRequest = OllamaAPI.timeout
-        configuration.timeoutIntervalForResource = OllamaAPI.timeout
         configuration.waitsForConnectivity = false
         return URLSession(configuration: configuration)
     }

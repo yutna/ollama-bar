@@ -38,6 +38,16 @@ if [ "$status" != "running model-loaded" ]; then
 fi
 stop_fake
 
+echo "== --warm preloads the fake model =="
+start_fake healthy
+warmed=$(OLLAMABAR_PORT="$PORT" "$BIN" --warm)
+echo "warm: $warmed"
+if [ "$warmed" != "loaded" ]; then
+    echo "FAIL: expected 'loaded', got '$warmed'"
+    exit 1
+fi
+stop_fake
+
 echo "== impostor server (404) is not mistaken for Ollama =="
 start_fake impostor
 status=$(OLLAMABAR_PORT="$PORT" "$BIN" --status)
