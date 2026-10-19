@@ -11,6 +11,7 @@
 #   - use the same format specifiers as the reference value
 # Additionally:
 #   - every key passed to String(localized:) in L10n.swift must exist
+#   - every `defaultValue:` in L10n.swift must match the English value
 #   - every resources/<lang>.lproj must be listed in CFBundleLocalizations
 #
 # Exits non-zero when a mismatch is found, so CI catches translations that
@@ -61,16 +62,38 @@ for my $file (@files) {
     }
 }
 
-# Every key the Swift code asks for must exist in the reference file.
+# Every key the Swift code asks for must exist in the reference file, and its
+# `defaultValue:` must match the English value: development builds and unit
+# tests use the Swift defaults while the app bundle serves the .strings value,
+# so drift between the two is invisible at runtime.
 my $l10n = "Sources/OllamaBarCore/L10n.swift";
 if (-f $l10n) {
     open my $fh, "<", $l10n or die "cannot read $l10n: $!";
     my $source = do { local $/; <$fh> };
     close $fh;
-    my %used = map { $_ => 1 } ($source =~ /localized:\s*"([^"]+)"/g);
+    my %used = map { $_ => 1 } ($source =~ /localized:\s*"((?:[^"\\]|\\.)*)"/g);
+    my %defaults;
+    while ($source =~ /localized:\s*"((?:[^"\\]|\\.)*)"\s*,\s*defaultValue:\s*"((?:[^"\\]|\\.)*)"/g) {
+        $defaults{$1} = $2;
+    }
     for my $key (sort keys %used) {
-        next if exists $reference->{$key};
-        print STDERR "L10n.swift uses \"$key\" but $reference_file does not define it\n";
+        if (!exists $reference->{$key}) {
+            print STDERR "L10n.swift uses \"$key\" but $reference_file does not define it\n";
+            $failed = 1;
+            next;
+        }
+        if (!exists $defaults{$key}) {
+            print STDERR "L10n.swift uses \"$key\" without a defaultValue; "
+                . "development builds would show the raw key\n";
+            $failed = 1;
+            next;
+        }
+        my $swift = unescape($defaults{$key});
+        my $english = unescape($reference->{$key});
+        next if $swift eq $english;
+        print STDERR "default value mismatch for \"$key\":\n";
+        print STDERR "  $l10n: " . show_escapes($swift) . "\n";
+        print STDERR "  $reference_file: " . show_escapes($english) . "\n";
         $failed = 1;
     }
 }
@@ -132,4 +155,22 @@ sub specifiers {
     $value =~ s/%%//g;
     my @found = ($value =~ /%(?:\d+\$)?[-+ #0]*\d*(?:\.\d+)?[\@dDuUxXoOfeEgGcs]/g);
     return sort @found;
+}
+
+# Turns the escape sequences shared by Swift literals and .strings values into
+# the characters they stand for, so the two can be compared. A single pass
+# keeps `\\n` (escaped backslash followed by "n") from becoming a newline.
+sub unescape {
+    my ($value) = @_;
+    $value =~ s/\\(.)/ $1 eq 'n' ? "\n" : $1 eq 't' ? "\t" : $1 eq 'r' ? "\r" : $1 /gse;
+    return $value;
+}
+
+# Renders control characters back as escapes for readable error output.
+sub show_escapes {
+    my ($value) = @_;
+    $value =~ s/\\/\\\\/g;
+    $value =~ s/\n/\\n/g;
+    $value =~ s/\t/\\t/g;
+    return $value;
 }
