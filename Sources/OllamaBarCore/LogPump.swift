@@ -17,15 +17,21 @@ import Foundation
 /// `RotatingLogWriter.defaultMaxBytes`).
 enum LogPump {
     static func run(path: String) -> Never {
-        let writer = RotatingLogWriter(path: path, maxBytes: Config.logMaxBytes)
+        drain(from: .standardInput, into: RotatingLogWriter(path: path, maxBytes: Config.logMaxBytes))
+        exit(0)
+    }
+
+    /// Copies `input` into `writer` until the child closes its end of the pipe.
+    ///
+    /// Split out of `run` so tests can push a short-lived child's output
+    /// through the same code the pump process uses.
+    static func drain(from input: FileHandle, into writer: RotatingLogWriter) {
         writer.open()
-        let input = FileHandle.standardInput
         while true {
             let data = autoreleasepool { input.availableData }
             guard !data.isEmpty else { break }  // End of file: the server exited.
             writer.append(data)
         }
         writer.close()
-        exit(0)
     }
 }
